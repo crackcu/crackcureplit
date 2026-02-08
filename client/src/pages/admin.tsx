@@ -223,6 +223,18 @@ function UsersTab() {
                   <Label className="text-xs">Restricted</Label>
                   <Switch checked={u.isRestricted} onCheckedChange={(v) => toggleRestriction.mutate({ userId: u.id, isRestricted: v })} data-testid={`switch-restrict-${u.id}`} />
                 </div>
+                <Select
+                  value={(u as any).isSecondTimer ? "2nd" : "1st"}
+                  onValueChange={(v) => toggleSecondTimer.mutate({ userId: u.id, isSecondTimer: v === "2nd" })}
+                >
+                  <SelectTrigger className="w-28" data-testid={`select-timer-top-${u.id}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1st">1st Timer</SelectItem>
+                    <SelectItem value="2nd">2nd Timer</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   size="icon"
                   variant="ghost"
