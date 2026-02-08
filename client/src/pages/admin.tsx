@@ -70,12 +70,14 @@ export default function AdminDashboard() {
           <TabsTrigger value="classes" data-testid="tab-classes">Classes</TabsTrigger>
           <TabsTrigger value="resources" data-testid="tab-resources">Resources</TabsTrigger>
           <TabsTrigger value="notices" data-testid="tab-notices">Notices</TabsTrigger>
+          <TabsTrigger value="reg-form" data-testid="tab-reg-form">Reg Form</TabsTrigger>
           <TabsTrigger value="banners" data-testid="tab-banners">Banners</TabsTrigger>
           <TabsTrigger value="team" data-testid="tab-team">Team</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview"><OverviewTab /></TabsContent>
         <TabsContent value="users"><UsersTab /></TabsContent>
+        <TabsContent value="reg-form"><RegFormTab /></TabsContent>
         <TabsContent value="courses"><CoursesTab /></TabsContent>
         <TabsContent value="mock-tests"><MockTestsTab /></TabsContent>
         <TabsContent value="classes"><ClassesTab /></TabsContent>
@@ -295,6 +297,161 @@ function useDeleteMutation(endpoint: string, queryKey: string) {
       toast({ title: error.message, variant: "destructive" });
     },
   });
+}
+
+function RegFormTab() {
+  const { toast } = useToast();
+  const { data: allUsers } = useQuery<User[]>({ queryKey: ["/api/admin/users"] });
+  const [hscYear, setHscYear] = useState("");
+  const [sscYear, setSscYear] = useState("");
+  const [action, setAction] = useState("");
+
+  const uniqueHscYears = Array.from(new Set(allUsers?.map((u) => u.hscYear).filter(Boolean) || [])).sort();
+  const uniqueSscYears = Array.from(new Set(allUsers?.map((u) => u.sscYear).filter(Boolean) || [])).sort();
+
+  const effectiveHsc = hscYear && hscYear !== "__clear__" ? hscYear : "";
+  const effectiveSsc = sscYear && sscYear !== "__clear__" ? sscYear : "";
+
+  const matchingUsers = allUsers?.filter((u) => {
+    if (!effectiveHsc && !effectiveSsc) return false;
+    if (effectiveHsc && effectiveSsc) return u.hscYear === effectiveHsc && u.sscYear === effectiveSsc;
+    if (effectiveHsc) return u.hscYear === effectiveHsc;
+    return u.sscYear === effectiveSsc;
+  }) || [];
+
+  const bulkAssign = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/admin/bulk-assign", { hscYear: effectiveHsc, sscYear: effectiveSsc, action });
+    },
+    onSuccess: async (res) => {
+      const data = await res.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: data.message || `Updated ${data.count} user(s)` });
+      setAction("");
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ClipboardList className="h-5 w-5" />
+            Bulk Assign by Year
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Select HSC and/or SSC year to assign 1st Timer, 2nd Timer, or Restricted status to all matching users at once.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium">HSC Year</Label>
+              <Select value={hscYear} onValueChange={setHscYear}>
+                <SelectTrigger className="mt-1" data-testid="select-reg-hsc-year">
+                  <SelectValue placeholder="Select HSC Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__clear__">All HSC Years</SelectItem>
+                  {uniqueHscYears.map((y) => (
+                    <SelectItem key={y} value={y!}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">SSC Year</Label>
+              <Select value={sscYear} onValueChange={setSscYear}>
+                <SelectTrigger className="mt-1" data-testid="select-reg-ssc-year">
+                  <SelectValue placeholder="Select SSC Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__clear__">All SSC Years</SelectItem>
+                  {uniqueSscYears.map((y) => (
+                    <SelectItem key={y} value={y!}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {(effectiveHsc || effectiveSsc) && (
+            <div className="p-3 rounded-md bg-muted/50">
+              <p className="text-sm font-medium mb-1">
+                {matchingUsers.length} user(s) match
+                {effectiveHsc ? ` HSC ${effectiveHsc}` : ""}
+                {effectiveHsc && effectiveSsc ? " &" : ""}
+                {effectiveSsc ? ` SSC ${effectiveSsc}` : ""}
+              </p>
+              <div className="flex flex-wrap gap-1 mt-2 max-h-32 overflow-y-auto">
+                {matchingUsers.slice(0, 50).map((u) => (
+                  <Badge key={u.id} variant="secondary" className="text-xs">
+                    {u.fullName}
+                    {(u as any).isSecondTimer && " (2nd)"}
+                    {u.isRestricted && " (R)"}
+                  </Badge>
+                ))}
+                {matchingUsers.length > 50 && (
+                  <Badge variant="outline" className="text-xs">+{matchingUsers.length - 50} more</Badge>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <Label className="text-sm font-medium">Assign As</Label>
+            <Select value={action} onValueChange={setAction}>
+              <SelectTrigger className="mt-1 max-w-xs" data-testid="select-reg-action">
+                <SelectValue placeholder="Select action" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1st_timer">1st Timer</SelectItem>
+                <SelectItem value="2nd_timer">2nd Timer</SelectItem>
+                <SelectItem value="restricted">Restricted</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button
+            onClick={() => bulkAssign.mutate()}
+            disabled={(!effectiveHsc && !effectiveSsc) || !action || bulkAssign.isPending}
+            data-testid="button-bulk-assign"
+          >
+            {bulkAssign.isPending ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Applying...</>
+            ) : (
+              <>Apply to {matchingUsers.length} User(s)</>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Current Status Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="p-4 rounded-md bg-muted/50">
+              <p className="text-2xl font-bold">{allUsers?.filter((u) => !(u as any).isSecondTimer && !u.isRestricted).length ?? 0}</p>
+              <p className="text-sm text-muted-foreground">1st Timers</p>
+            </div>
+            <div className="p-4 rounded-md bg-muted/50">
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{allUsers?.filter((u) => (u as any).isSecondTimer).length ?? 0}</p>
+              <p className="text-sm text-muted-foreground">2nd Timers</p>
+            </div>
+            <div className="p-4 rounded-md bg-muted/50">
+              <p className="text-2xl font-bold text-destructive">{allUsers?.filter((u) => u.isRestricted).length ?? 0}</p>
+              <p className="text-sm text-muted-foreground">Restricted</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 function CoursesTab() {
