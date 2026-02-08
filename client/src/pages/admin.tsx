@@ -153,25 +153,6 @@ function UsersTab() {
     },
   });
 
-  const toggleSecondTimer = useMutation({
-    mutationFn: async ({ userId, isSecondTimer }: { userId: number; isSecondTimer: boolean }) => {
-      await apiRequest("PATCH", `/api/admin/users/${userId}`, { isSecondTimer });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({ title: "Timer status updated" });
-    },
-  });
-
-  const updateYear = useMutation({
-    mutationFn: async ({ userId, field, value }: { userId: number; field: string; value: string }) => {
-      await apiRequest("PATCH", `/api/admin/users/${userId}`, { [field]: value });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({ title: "Year updated" });
-    },
-  });
 
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
@@ -223,18 +204,6 @@ function UsersTab() {
                   <Label className="text-xs">Restricted</Label>
                   <Switch checked={u.isRestricted} onCheckedChange={(v) => toggleRestriction.mutate({ userId: u.id, isRestricted: v })} data-testid={`switch-restrict-${u.id}`} />
                 </div>
-                <Select
-                  value={(u as any).isSecondTimer ? "2nd" : "1st"}
-                  onValueChange={(v) => toggleSecondTimer.mutate({ userId: u.id, isSecondTimer: v === "2nd" })}
-                >
-                  <SelectTrigger className="w-28" data-testid={`select-timer-top-${u.id}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1st">1st Timer</SelectItem>
-                    <SelectItem value="2nd">2nd Timer</SelectItem>
-                  </SelectContent>
-                </Select>
                 <Button
                   size="icon"
                   variant="ghost"
@@ -300,50 +269,6 @@ function UsersTab() {
                   <div>
                     <p className="text-xs text-muted-foreground">Registered</p>
                     <p className="font-medium">{u.createdAt ? format(new Date(u.createdAt), "PPp") : "N/A"}</p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t">
-                  <p className="text-xs font-medium text-muted-foreground mb-3">Admin Controls</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <Label className="text-xs">HSC Year</Label>
-                      <Input
-                        defaultValue={u.hscYear}
-                        className="mt-1"
-                        onBlur={(e) => {
-                          if (e.target.value && e.target.value !== u.hscYear)
-                            updateYear.mutate({ userId: u.id, field: "hscYear", value: e.target.value });
-                        }}
-                        data-testid={`input-hsc-year-${u.id}`}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">SSC Year</Label>
-                      <Input
-                        defaultValue={u.sscYear}
-                        className="mt-1"
-                        onBlur={(e) => {
-                          if (e.target.value && e.target.value !== u.sscYear)
-                            updateYear.mutate({ userId: u.id, field: "sscYear", value: e.target.value });
-                        }}
-                        data-testid={`input-ssc-year-${u.id}`}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Attempt Status</Label>
-                      <Select
-                        value={(u as any).isSecondTimer ? "2nd" : "1st"}
-                        onValueChange={(v) => toggleSecondTimer.mutate({ userId: u.id, isSecondTimer: v === "2nd" })}
-                      >
-                        <SelectTrigger className="mt-1" data-testid={`select-timer-${u.id}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1st">1st Timer</SelectItem>
-                          <SelectItem value="2nd">2nd Timer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
                 </div>
               </div>

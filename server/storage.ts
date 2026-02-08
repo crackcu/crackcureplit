@@ -22,6 +22,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
+  bulkUpdateUsersByYear(hscYear: string, sscYear: string, data: Partial<User>): Promise<number>;
 
   getHeroBanners(): Promise<HeroBanner[]>;
   getAllHeroBanners(): Promise<HeroBanner[]>;
@@ -118,6 +119,15 @@ export class DatabaseStorage implements IStorage {
   async updateUser(id: number, data: Partial<User>): Promise<User | undefined> {
     const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
     return user;
+  }
+
+  async bulkUpdateUsersByYear(hscYear: string, sscYear: string, data: Partial<User>): Promise<number> {
+    const conditions = [];
+    if (hscYear) conditions.push(eq(users.hscYear, hscYear));
+    if (sscYear) conditions.push(eq(users.sscYear, sscYear));
+    if (conditions.length === 0) return 0;
+    const result = await db.update(users).set(data).where(and(...conditions)).returning();
+    return result.length;
   }
 
   async getHeroBanners(): Promise<HeroBanner[]> {

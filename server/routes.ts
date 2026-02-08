@@ -550,6 +550,34 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/bulk-assign", requireAdmin, async (req, res) => {
+    try {
+      const { hscYear, sscYear, action } = req.body;
+      if (!hscYear && !sscYear) {
+        return res.status(400).json({ message: "At least one year filter (HSC or SSC) is required" });
+      }
+      if (!action || !["1st_timer", "2nd_timer", "restricted"].includes(action)) {
+        return res.status(400).json({ message: "Invalid action. Must be 1st_timer, 2nd_timer, or restricted" });
+      }
+
+      const updateData: any = {};
+      if (action === "1st_timer") {
+        updateData.isSecondTimer = false;
+        updateData.isRestricted = false;
+      } else if (action === "2nd_timer") {
+        updateData.isSecondTimer = true;
+        updateData.isRestricted = false;
+      } else if (action === "restricted") {
+        updateData.isRestricted = true;
+      }
+
+      const count = await storage.bulkUpdateUsersByYear(hscYear || "", sscYear || "", updateData);
+      res.json({ message: `Successfully updated ${count} user(s)`, count });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/admin/courses", requireAdmin, async (_req, res) => {
     res.json(await storage.getAllCourses());
   });
