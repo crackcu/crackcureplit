@@ -33,6 +33,11 @@ import {
   Eye,
   EyeOff,
   X,
+  Search,
+  ClipboardList,
+  CheckCircle,
+  XCircle,
+  Download,
 } from "lucide-react";
 import type { User, Course, MockTest, Class, Resource, Notice, TeamMember, HeroBanner } from "@shared/schema";
 import { MOCK_TAGS, CLASS_TAGS, RESOURCE_TAGS, ACCESS_LEVELS, USER_ROLES, NOTICE_TAGS } from "@shared/schema";
@@ -788,6 +793,8 @@ function MockTestsTab() {
 
 function MockTestCard({ test, onEdit, onDelete }: { test: MockTest; onEdit: () => void; onDelete: () => void }) {
   const questions = Array.isArray(test.questions) ? test.questions : [];
+  const [showSubmissions, setShowSubmissions] = useState(false);
+
   return (
     <Card data-testid={`card-mock-${test.id}`}>
       <CardContent className="pt-4">
@@ -809,6 +816,15 @@ function MockTestCard({ test, onEdit, onDelete }: { test: MockTest; onEdit: () =
               {test.isVisible ? "Visible" : "Hidden"}
             </Badge>
             <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowSubmissions(!showSubmissions)}
+              data-testid={`button-submissions-mock-${test.id}`}
+            >
+              <ClipboardList className="h-3.5 w-3.5 mr-1" />
+              Submissions
+            </Button>
+            <Button
               size="icon"
               variant="ghost"
               onClick={onEdit}
@@ -826,8 +842,149 @@ function MockTestCard({ test, onEdit, onDelete }: { test: MockTest; onEdit: () =
             </Button>
           </div>
         </div>
+
+        {showSubmissions && (
+          <div className="mt-4 pt-4 border-t">
+            <MockSubmissionsList mockTestId={test.id} mockTitle={test.title} />
+          </div>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+interface SubmissionRow {
+  id: number;
+  mockTestId: number;
+  userId: number;
+  totalMarks: number | null;
+  engPMarks: number | null;
+  engOMarks: number | null;
+  asMarks: number | null;
+  psMarks: number | null;
+  netMarks: number | null;
+  passed: boolean | null;
+  isSubmitted: boolean;
+  submittedAt: string | null;
+  startedAt: string;
+  username: string;
+  fullName: string;
+  whatsapp: string;
+}
+
+function MockSubmissionsList({ mockTestId, mockTitle }: { mockTestId: number; mockTitle: string }) {
+  const { data: submissions, isLoading } = useQuery<SubmissionRow[]>({
+    queryKey: [`/api/admin/mock-tests/${mockTestId}/submissions`],
+  });
+
+  const [search, setSearch] = useState("");
+  const [passFilter, setPassFilter] = useState<string>("all");
+
+  if (isLoading) return <Skeleton className="h-24 w-full" />;
+
+  const submitted = submissions?.filter(s => s.isSubmitted) || [];
+
+  const filtered = submitted.filter((s) => {
+    if (passFilter === "passed" && !s.passed) return false;
+    if (passFilter === "failed" && s.passed) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return s.username.toLowerCase().includes(q) || s.fullName.toLowerCase().includes(q) || s.whatsapp.includes(q);
+    }
+    return true;
+  });
+
+  const passedCount = submitted.filter(s => s.passed).length;
+  const failedCount = submitted.filter(s => !s.passed).length;
+
+  return (
+    <div className="space-y-3" data-testid={`submissions-panel-${mockTestId}`}>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-medium">
+            {submitted.length} Submission{submitted.length !== 1 ? "s" : ""}
+          </p>
+          <Badge variant="secondary" className="text-xs">
+            <CheckCircle className="h-3 w-3 mr-1 text-green-600" /> {passedCount} Passed
+          </Badge>
+          <Badge variant="secondary" className="text-xs">
+            <XCircle className="h-3 w-3 mr-1 text-destructive" /> {failedCount} Failed
+          </Badge>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, username, or WhatsApp..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 text-xs"
+            data-testid={`input-search-submissions-${mockTestId}`}
+          />
+        </div>
+        <Select value={passFilter} onValueChange={setPassFilter}>
+          <SelectTrigger className="w-28" data-testid={`select-filter-${mockTestId}`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="passed">Passed</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {filtered.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs" data-testid={`table-submissions-${mockTestId}`}>
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="py-2 pr-2 font-medium">#</th>
+                <th className="py-2 pr-2 font-medium">Username</th>
+                <th className="py-2 pr-2 font-medium">Name</th>
+                <th className="py-2 pr-2 font-medium">WhatsApp</th>
+                <th className="py-2 pr-2 font-medium text-center">EngP</th>
+                <th className="py-2 pr-2 font-medium text-center">EngO</th>
+                <th className="py-2 pr-2 font-medium text-center">AS</th>
+                <th className="py-2 pr-2 font-medium text-center">PS</th>
+                <th className="py-2 pr-2 font-medium text-center">Total</th>
+                <th className="py-2 pr-2 font-medium text-center">Net</th>
+                <th className="py-2 font-medium text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((s, idx) => (
+                <tr key={s.id} className="border-b last:border-0" data-testid={`row-submission-${s.id}`}>
+                  <td className="py-2 pr-2 text-muted-foreground">{idx + 1}</td>
+                  <td className="py-2 pr-2 font-mono">{s.username}</td>
+                  <td className="py-2 pr-2">{s.fullName}</td>
+                  <td className="py-2 pr-2">{s.whatsapp}</td>
+                  <td className="py-2 pr-2 text-center">{s.engPMarks?.toFixed(1) ?? "-"}</td>
+                  <td className="py-2 pr-2 text-center">{s.engOMarks?.toFixed(1) ?? "-"}</td>
+                  <td className="py-2 pr-2 text-center">{s.asMarks?.toFixed(1) ?? "-"}</td>
+                  <td className="py-2 pr-2 text-center">{s.psMarks?.toFixed(1) ?? "-"}</td>
+                  <td className="py-2 pr-2 text-center font-medium">{s.totalMarks?.toFixed(1) ?? "-"}</td>
+                  <td className="py-2 pr-2 text-center font-medium">{s.netMarks?.toFixed(1) ?? "-"}</td>
+                  <td className="py-2 text-center">
+                    {s.passed ? (
+                      <Badge variant="default" className="bg-green-600 text-xs">Pass</Badge>
+                    ) : (
+                      <Badge variant="destructive" className="text-xs">Fail</Badge>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground py-2">
+          {submitted.length === 0 ? "No submissions yet for this mock test." : "No matching submissions found."}
+        </p>
+      )}
+    </div>
   );
 }
 

@@ -56,6 +56,7 @@ export interface IStorage {
   createSubmission(data: InsertMockSubmission): Promise<MockSubmission>;
   getSubmission(id: number): Promise<MockSubmission | undefined>;
   getUserSubmissions(userId: number): Promise<MockSubmission[]>;
+  getSubmissionsByMockTestId(mockTestId: number): Promise<any[]>;
   updateSubmission(id: number, data: Partial<MockSubmission>): Promise<MockSubmission | undefined>;
 
   updateCourse(id: number, data: Partial<Course>): Promise<Course | undefined>;
@@ -303,6 +304,33 @@ export class DatabaseStorage implements IStorage {
 
   async getUserSubmissions(userId: number): Promise<MockSubmission[]> {
     return db.select().from(mockSubmissions).where(eq(mockSubmissions.userId, userId)).orderBy(desc(mockSubmissions.startedAt));
+  }
+
+  async getSubmissionsByMockTestId(mockTestId: number): Promise<any[]> {
+    const rows = await db
+      .select({
+        id: mockSubmissions.id,
+        mockTestId: mockSubmissions.mockTestId,
+        userId: mockSubmissions.userId,
+        totalMarks: mockSubmissions.totalMarks,
+        engPMarks: mockSubmissions.engPMarks,
+        engOMarks: mockSubmissions.engOMarks,
+        asMarks: mockSubmissions.asMarks,
+        psMarks: mockSubmissions.psMarks,
+        netMarks: mockSubmissions.netMarks,
+        passed: mockSubmissions.passed,
+        isSubmitted: mockSubmissions.isSubmitted,
+        submittedAt: mockSubmissions.submittedAt,
+        startedAt: mockSubmissions.startedAt,
+        username: users.username,
+        fullName: users.fullName,
+        whatsapp: users.whatsapp,
+      })
+      .from(mockSubmissions)
+      .innerJoin(users, eq(mockSubmissions.userId, users.id))
+      .where(eq(mockSubmissions.mockTestId, mockTestId))
+      .orderBy(desc(mockSubmissions.submittedAt));
+    return rows;
   }
 
   async updateSubmission(id: number, data: Partial<MockSubmission>): Promise<MockSubmission | undefined> {

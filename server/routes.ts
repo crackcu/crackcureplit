@@ -253,7 +253,13 @@ export async function registerRoutes(
 
   app.get("/api/my-submissions", requireAuth, async (req, res) => {
     const submissions = await storage.getUserSubmissions(req.session.userId!);
-    res.json(submissions);
+    const allTests = await storage.getAllMockTests();
+    const testMap = new Map(allTests.map(t => [t.id, t.title]));
+    const enriched = submissions.map(s => ({
+      ...s,
+      mockTestTitle: testMap.get(s.mockTestId) || `Mock #${s.mockTestId}`,
+    }));
+    res.json(enriched);
   });
 
   app.get("/api/my-submissions/:submissionId/review", requireAuth, async (req, res) => {
@@ -592,6 +598,17 @@ export async function registerRoutes(
       const id = parseInt(req.params.id);
       await storage.deleteMockTest(id);
       res.json({ message: "Deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ======= MOCK SUBMISSIONS (Admin) =======
+  app.get("/api/admin/mock-tests/:id/submissions", requireAdmin, async (req, res) => {
+    try {
+      const mockTestId = parseInt(req.params.id);
+      const submissions = await storage.getSubmissionsByMockTestId(mockTestId);
+      res.json(submissions);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

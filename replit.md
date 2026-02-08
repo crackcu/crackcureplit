@@ -8,6 +8,9 @@ Crack-CU is a mobile-responsive ed-tech platform for Chittagong University admis
 - Feb 2026: Added ImageUploader component (URL + file upload via object storage) across all admin image fields
 - Feb 2026: Mock test visual question editor with per-question image upload and ID assigning
 - Feb 2026: Bangladesh timezone (Asia/Dhaka) for mock scheduling and display
+- Feb 2026: Student dashboard shows mock test names instead of IDs in submission history
+- Feb 2026: Premium student golden crown on profile avatar + golden vibe styling on dashboard
+- Feb 2026: Admin mock submissions panel with table (serial, username, name, WhatsApp, subject-wise marks, total, net, pass/fail) with search and pass/fail filter
 - Feb 2026: Mock test exam page with timer, grading engine, and result display
 - Feb 2026: Email notifications on registration, mock submission, and contact form (via crackcu.info@gmail.com)
 - Database schema: 11 tables via Drizzle ORM + PostgreSQL
