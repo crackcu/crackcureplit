@@ -6,6 +6,7 @@ import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Crown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,11 +83,18 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-user-menu">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-medium">
-                      {user.fullName?.charAt(0)?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className={`h-8 w-8 ${user.isPremium ? "border border-yellow-500 dark:border-yellow-400" : ""}`}>
+                      <AvatarFallback className={`text-xs font-medium ${user.isPremium ? "bg-yellow-500 dark:bg-yellow-600 text-white" : "bg-primary text-primary-foreground"}`}>
+                        {user.fullName?.charAt(0)?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    {user.isPremium && (
+                      <div className="absolute -top-1.5 -right-0.5 drop-shadow-[0_0_3px_rgba(234,179,8,0.6)]" data-testid="icon-nav-premium-crown">
+                        <Crown className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 fill-yellow-500 dark:fill-yellow-400" />
+                      </div>
+                    )}
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
