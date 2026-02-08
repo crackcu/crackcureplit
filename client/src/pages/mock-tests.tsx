@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
 import { Clock, Play, Calendar, FileText } from "lucide-react";
 import type { MockTest } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -111,7 +110,7 @@ export default function MockTestsPage() {
                   <CardContent className="flex-1">
                     <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                       <Calendar className="h-3.5 w-3.5" />
-                      <span>{format(publishDate, "MMM dd, yyyy hh:mm a")}</span>
+                      <span>{publishDate.toLocaleString("en-US", { timeZone: "Asia/Dhaka", month: "short", day: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} (BST)</span>
                     </div>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                       <Clock className="h-3.5 w-3.5" />

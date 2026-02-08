@@ -37,6 +37,7 @@ import {
 import type { User, Course, MockTest, Class, Resource, Notice, TeamMember, HeroBanner } from "@shared/schema";
 import { MOCK_TAGS, CLASS_TAGS, RESOURCE_TAGS, ACCESS_LEVELS, USER_ROLES, NOTICE_TAGS } from "@shared/schema";
 import { Redirect } from "wouter";
+import { ImageUploader } from "@/components/image-uploader";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -345,10 +346,11 @@ function CoursesTab() {
                 <Label className="text-xs">Description</Label>
                 <Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
               </div>
-              <div>
-                <Label className="text-xs">Banner Image URL</Label>
-                <Input value={formData.bannerImage || ""} onChange={(e) => setFormData({ ...formData, bannerImage: e.target.value })} placeholder="https://..." />
-              </div>
+              <ImageUploader
+                label="Banner Image"
+                value={formData.bannerImage || ""}
+                onChange={(url) => setFormData({ ...formData, bannerImage: url })}
+              />
               <div className="flex items-center gap-3 py-1">
                 <Label className="text-xs">Free Course</Label>
                 <Switch
@@ -446,11 +448,130 @@ function CoursesTab() {
   );
 }
 
+interface QuestionItem {
+  id: number;
+  passage: string | null;
+  section: string;
+  question: string;
+  image: string | null;
+  options: string[];
+  correctAnswer: number;
+}
+
+function QuestionEditor({ questions, onChange }: { questions: QuestionItem[]; onChange: (q: QuestionItem[]) => void }) {
+  const addQuestion = () => {
+    const nextId = questions.length > 0 ? Math.max(...questions.map(q => q.id)) + 1 : 1;
+    onChange([...questions, { id: nextId, passage: null, section: "EngP", question: "", image: null, options: ["", "", "", ""], correctAnswer: 0 }]);
+  };
+
+  const updateQuestion = (index: number, field: string, value: any) => {
+    const updated = [...questions];
+    if (field === "id") {
+      const existingIds = updated.filter((_, i) => i !== index).map(q => q.id);
+      if (existingIds.includes(value)) {
+        return;
+      }
+    }
+    (updated[index] as any)[field] = value;
+    onChange(updated);
+  };
+
+  const updateOption = (qIndex: number, oIndex: number, value: string) => {
+    const updated = [...questions];
+    updated[qIndex].options[oIndex] = value;
+    onChange(updated);
+  };
+
+  const removeQuestion = (index: number) => {
+    onChange(questions.filter((_, i) => i !== index));
+  };
+
+  const SECTIONS = ["EngP", "EngO", "AS", "PS"];
+
+  return (
+    <div className="space-y-3">
+      {questions.map((q, idx) => (
+        <Card key={idx} className="border-dashed">
+          <CardContent className="pt-3 space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">ID: {q.id}</Badge>
+                <Input
+                  type="number"
+                  value={q.id}
+                  onChange={(e) => updateQuestion(idx, "id", Number(e.target.value))}
+                  className="w-20 h-7 text-xs"
+                  data-testid={`input-q-id-${idx}`}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={q.section} onValueChange={(v) => updateQuestion(idx, "section", v)}>
+                  <SelectTrigger className="w-24 h-7 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SECTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button type="button" size="icon" variant="ghost" onClick={() => removeQuestion(idx)} data-testid={`button-remove-q-${idx}`}>
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Question</Label>
+              <Textarea value={q.question} onChange={(e) => updateQuestion(idx, "question", e.target.value)} rows={2} className="text-xs" />
+            </div>
+            {(q.section === "EngP") && (
+              <div>
+                <Label className="text-xs">Passage (for EngP)</Label>
+                <Textarea value={q.passage || ""} onChange={(e) => updateQuestion(idx, "passage", e.target.value || null)} rows={3} className="text-xs" />
+              </div>
+            )}
+            <ImageUploader
+              label="Question Image"
+              value={q.image || ""}
+              onChange={(url) => updateQuestion(idx, "image", url || null)}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              {q.options.map((opt, oi) => (
+                <div key={oi} className="flex items-center gap-1">
+                  <span className={`text-xs font-bold w-4 ${q.correctAnswer === oi ? "text-green-600" : ""}`}>{String.fromCharCode(65 + oi)}</span>
+                  <Input value={opt} onChange={(e) => updateOption(idx, oi, e.target.value)} className="h-7 text-xs" placeholder={`Option ${String.fromCharCode(65 + oi)}`} />
+                </div>
+              ))}
+            </div>
+            <div>
+              <Label className="text-xs">Correct Answer</Label>
+              <Select value={String(q.correctAnswer)} onValueChange={(v) => updateQuestion(idx, "correctAnswer", Number(v))}>
+                <SelectTrigger className="w-32 h-7 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">A</SelectItem>
+                  <SelectItem value="1">B</SelectItem>
+                  <SelectItem value="2">C</SelectItem>
+                  <SelectItem value="3">D</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+      <Button type="button" variant="outline" size="sm" onClick={addQuestion} data-testid="button-add-question">
+        <Plus className="h-3.5 w-3.5 mr-1" /> Add Question
+      </Button>
+    </div>
+  );
+}
+
 function MockTestsTab() {
   const { data: testList, isLoading } = useQuery<MockTest[]>({ queryKey: ["/api/admin/mock-tests"] });
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [questions, setQuestions] = useState<QuestionItem[]>([]);
+  const [inputMode, setInputMode] = useState<"visual" | "json">("visual");
   const [questionsJson, setQuestionsJson] = useState("");
   const [jsonError, setJsonError] = useState("");
   const deleteMutation = useDeleteMutation("/api/admin/mock-tests", "/api/admin/mock-tests");
@@ -463,6 +584,7 @@ function MockTestsTab() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/mock-tests"] });
       toast({ title: "Mock test created" });
       setFormData({});
+      setQuestions([]);
       setQuestionsJson("");
       setIsCreating(false);
     },
@@ -473,23 +595,29 @@ function MockTestsTab() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    let parsedQuestions: any[] = [];
-    if (questionsJson.trim()) {
-      try {
-        parsedQuestions = JSON.parse(questionsJson);
-        if (!Array.isArray(parsedQuestions)) {
-          setJsonError("Questions must be a JSON array");
+    let finalQuestions: any[] = [];
+    if (inputMode === "json") {
+      if (questionsJson.trim()) {
+        try {
+          finalQuestions = JSON.parse(questionsJson);
+          if (!Array.isArray(finalQuestions)) {
+            setJsonError("Questions must be a JSON array");
+            return;
+          }
+          setJsonError("");
+        } catch {
+          setJsonError("Invalid JSON format. Please check your syntax.");
           return;
         }
-        setJsonError("");
-      } catch {
-        setJsonError("Invalid JSON format. Please check your syntax.");
-        return;
       }
+    } else {
+      finalQuestions = questions;
     }
+    const publishTimeWithTZ = formData.publishTime ? formData.publishTime + "+06:00" : undefined;
     const data = {
       ...formData,
-      questions: parsedQuestions,
+      publishTime: publishTimeWithTZ,
+      questions: finalQuestions,
       duration: Number(formData.duration) || 60,
       isVisible: formData.isVisible ?? true,
       access: formData.access || "all",
@@ -497,44 +625,23 @@ function MockTestsTab() {
     createMutation.mutate(data);
   };
 
-  const sampleJson = `[
-  {
-    "id": 1,
-    "passage": "This is a test passage.",
-    "section": "EngP",
-    "question": "What is the purpose of this passage?",
-    "image": null,
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 0
-  },
-  {
-    "id": 2,
-    "passage": null,
-    "section": "EngO",
-    "question": "Choose the correct synonym.",
-    "image": null,
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 2
-  },
-  {
-    "id": 3,
-    "passage": null,
-    "section": "AS",
-    "question": "Solve the analytical problem.",
-    "image": null,
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 1
-  },
-  {
-    "id": 4,
-    "passage": null,
-    "section": "PS",
-    "question": "Solve the math problem.",
-    "image": null,
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 3
-  }
-]`;
+  const syncToJson = () => {
+    setQuestionsJson(JSON.stringify(questions, null, 2));
+    setInputMode("json");
+  };
+
+  const syncToVisual = () => {
+    try {
+      const parsed = JSON.parse(questionsJson);
+      if (Array.isArray(parsed)) {
+        setQuestions(parsed);
+        setInputMode("visual");
+        setJsonError("");
+      }
+    } catch {
+      setJsonError("Fix JSON errors before switching to visual editor");
+    }
+  };
 
   return (
     <div>
@@ -574,7 +681,7 @@ function MockTestsTab() {
                 </div>
               </div>
               <div>
-                <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Publish Date & Time</Label>
+                <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Publish Date & Time (Bangladesh Time)</Label>
                 <Input
                   type="datetime-local"
                   value={formData.publishTime || ""}
@@ -582,6 +689,7 @@ function MockTestsTab() {
                   required
                   data-testid="input-mock-publish-time"
                 />
+                <p className="text-xs text-muted-foreground mt-0.5">Time is in Bangladesh Standard Time (BST, UTC+6)</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -600,31 +708,40 @@ function MockTestsTab() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Label className="text-xs">Questions (JSON format)</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setQuestionsJson(sampleJson)}
-                    data-testid="button-load-sample"
-                  >
-                    Load Sample
-                  </Button>
+                <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                  <Label className="text-xs">Questions ({inputMode === "visual" ? questions.length : "JSON"})</Label>
+                  <div className="flex gap-1">
+                    <Button type="button" variant={inputMode === "visual" ? "default" : "outline"} size="sm" className="h-6 text-xs px-2"
+                      onClick={() => inputMode === "json" ? syncToVisual() : setInputMode("visual")}
+                      data-testid="button-mode-visual">
+                      Visual Editor
+                    </Button>
+                    <Button type="button" variant={inputMode === "json" ? "default" : "outline"} size="sm" className="h-6 text-xs px-2"
+                      onClick={() => inputMode === "visual" ? syncToJson() : setInputMode("json")}
+                      data-testid="button-mode-json">
+                      JSON Editor
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Sections: EngP (English Passage), EngO (English Other), AS (Analytical Skill), PS (Problem Solving).
-                  correctAnswer: 0=A, 1=B, 2=C, 3=D. Set "image" to a URL or null.
-                </p>
-                <Textarea
-                  value={questionsJson}
-                  onChange={(e) => { setQuestionsJson(e.target.value); setJsonError(""); }}
-                  rows={12}
-                  className="font-mono text-xs"
-                  placeholder={`Paste your questions JSON here...`}
-                  data-testid="textarea-mock-questions"
-                />
-                {jsonError && <p className="text-xs text-destructive mt-1">{jsonError}</p>}
+
+                {inputMode === "visual" ? (
+                  <QuestionEditor questions={questions} onChange={setQuestions} />
+                ) : (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Sections: EngP, EngO, AS, PS. correctAnswer: 0=A, 1=B, 2=C, 3=D. Set "image" to a URL or null.
+                    </p>
+                    <Textarea
+                      value={questionsJson}
+                      onChange={(e) => { setQuestionsJson(e.target.value); setJsonError(""); }}
+                      rows={12}
+                      className="font-mono text-xs"
+                      placeholder="Paste your questions JSON here..."
+                      data-testid="textarea-mock-questions"
+                    />
+                    {jsonError && <p className="text-xs text-destructive mt-1">{jsonError}</p>}
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2">
@@ -666,7 +783,7 @@ function MockTestCard({ test, onDelete }: { test: MockTest; onDelete: () => void
               <span className="text-xs text-muted-foreground">{test.access}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Publish: {test.publishTime ? format(new Date(test.publishTime), "PPp") : "N/A"}
+              Publish: {test.publishTime ? new Date(test.publishTime).toLocaleString("en-US", { timeZone: "Asia/Dhaka", dateStyle: "medium", timeStyle: "short" }) + " (BST)" : "N/A"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -757,10 +874,11 @@ function ClassesTab() {
                 <Label className="text-xs">Video URL</Label>
                 <Input value={formData.videoUrl || ""} onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })} required placeholder="YouTube/Drive URL" />
               </div>
-              <div>
-                <Label className="text-xs">Thumbnail URL (optional)</Label>
-                <Input value={formData.thumbnail || ""} onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." />
-              </div>
+              <ImageUploader
+                label="Thumbnail"
+                value={formData.thumbnail || ""}
+                onChange={(url) => setFormData({ ...formData, thumbnail: url })}
+              />
               <div>
                 <Label className="text-xs">Tag</Label>
                 <Select value={formData.tag || ""} onValueChange={(v) => setFormData({ ...formData, tag: v })}>
@@ -816,10 +934,11 @@ function ClassesTab() {
                       <Label className="text-xs">Video URL</Label>
                       <Input value={editData.videoUrl || ""} onChange={(e) => setEditData({ ...editData, videoUrl: e.target.value })} required />
                     </div>
-                    <div>
-                      <Label className="text-xs">Thumbnail URL</Label>
-                      <Input value={editData.thumbnail || ""} onChange={(e) => setEditData({ ...editData, thumbnail: e.target.value })} />
-                    </div>
+                    <ImageUploader
+                      label="Thumbnail"
+                      value={editData.thumbnail || ""}
+                      onChange={(url) => setEditData({ ...editData, thumbnail: url })}
+                    />
                     <div>
                       <Label className="text-xs">Tag</Label>
                       <Select value={editData.tag || ""} onValueChange={(v) => setEditData({ ...editData, tag: v })}>
@@ -1153,10 +1272,11 @@ function BannersTab() {
                 <Label className="text-xs">Description</Label>
                 <Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
               </div>
-              <div>
-                <Label className="text-xs">Image URL</Label>
-                <Input value={formData.imageUrl || ""} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="https://..." />
-              </div>
+              <ImageUploader
+                label="Banner Image"
+                value={formData.imageUrl || ""}
+                onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+              />
               <div>
                 <Label className="text-xs">Link URL</Label>
                 <Input value={formData.linkUrl || ""} onChange={(e) => setFormData({ ...formData, linkUrl: e.target.value })} />
@@ -1258,10 +1378,11 @@ function TeamTab() {
                 <Label className="text-xs">Post / Title</Label>
                 <Input value={formData.post || ""} onChange={(e) => setFormData({ ...formData, post: e.target.value })} required />
               </div>
-              <div>
-                <Label className="text-xs">Photo URL</Label>
-                <Input value={formData.photo || ""} onChange={(e) => setFormData({ ...formData, photo: e.target.value })} placeholder="https://..." />
-              </div>
+              <ImageUploader
+                label="Photo"
+                value={formData.photo || ""}
+                onChange={(url) => setFormData({ ...formData, photo: url })}
+              />
               <div>
                 <Label className="text-xs">Description</Label>
                 <Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />

@@ -29,6 +29,20 @@ function generateUsername(hscGroup: string, hscYear: string, hscRoll: string): s
   return `${groupLetter}${yearSuffix}${hscRoll}`;
 }
 
+function parseBDTime(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  if (dateStr.includes("T") && !dateStr.includes("+") && !dateStr.includes("Z")) {
+    const utcDate = new Date(dateStr + "+06:00");
+    return isNaN(utcDate.getTime()) ? null : utcDate;
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatBDTime(date: Date): string {
+  return date.toLocaleString("en-US", { timeZone: "Asia/Dhaka", dateStyle: "medium", timeStyle: "short" });
+}
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -208,7 +222,7 @@ export async function registerRoutes(
       const { name, email, subject, message } = req.body;
       await transporter.sendMail({
         from: `"${name}" <${email}>`,
-        to: process.env.SMTP_USER || "crack.info@gmail.com",
+        to: process.env.SMTP_USER || "crackcu.info@gmail.com",
         subject: subject || "Contact Form Message",
         html: `<h3>New Contact Form Message</h3><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Subject:</strong> ${subject || "N/A"}</p><p><strong>Message:</strong></p><p>${message}</p>`,
       });
@@ -220,6 +234,21 @@ export async function registerRoutes(
   });
 
   // ======= AUTHENTICATED USER ROUTES =======
+  app.get("/api/mock-tests/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const test = await storage.getMockTest(id);
+      if (!test || !test.isVisible) return res.status(404).json({ message: "Mock test not found" });
+      const publishDate = new Date(test.publishTime);
+      if (publishDate.getTime() > Date.now()) {
+        return res.status(403).json({ message: "This mock test hasn't started yet" });
+      }
+      res.json(test);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/my-submissions", requireAuth, async (req, res) => {
     const submissions = await storage.getUserSubmissions(req.session.userId!);
     res.json(submissions);
@@ -241,6 +270,143 @@ export async function registerRoutes(
       res.json(enrollment);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Enrollment failed" });
+    }
+  });
+
+  // ======= MOCK TEST SUBMISSION & GRADING =======
+  app.post("/api/mock-tests/:id/submit", requireAuth, async (req, res) => {
+    try {
+      const mockTestId = parseInt(req.params.id);
+      const userId = req.session.userId!;
+      const { answers } = req.body;
+
+      if (!answers || typeof answers !== "object") {
+        return res.status(400).json({ message: "Answers are required" });
+      }
+
+      const test = await storage.getMockTest(mockTestId);
+      if (!test) return res.status(404).json({ message: "Mock test not found" });
+
+      const questions = Array.isArray(test.questions) ? test.questions as any[] : [];
+      if (questions.length === 0) {
+        return res.status(400).json({ message: "This mock test has no questions" });
+      }
+
+      const validSections = ["EngP", "EngO", "AS", "PS"];
+      for (const [qId, ans] of Object.entries(answers)) {
+        if (ans !== null && ans !== -1 && (typeof ans !== "number" || ans < 0 || ans > 3)) {
+          return res.status(400).json({ message: `Invalid answer for question ${qId}` });
+        }
+      }
+
+      const existingSubs = await storage.getUserSubmissions(userId);
+      const prevSubmissions = existingSubs.filter(s => s.mockTestId === mockTestId && s.isSubmitted);
+      const attemptNumber = prevSubmissions.length + 1;
+
+      // Grading rules:
+      // EngP: +2 correct, -0.5 wrong, pass 13
+      // EngO: +1 correct, -0.25 wrong
+      // AS: +2 correct, -0.5 wrong, pass 10
+      // PS: +2 correct, -0.5 wrong, pass 10
+      // Overall pass: 40
+      // 2nd attempt penalty: -3
+
+      const markingRules: Record<string, { correct: number; wrong: number; pass: number }> = {
+        EngP: { correct: 2, wrong: -0.5, pass: 13 },
+        EngO: { correct: 1, wrong: -0.25, pass: 0 },
+        AS: { correct: 2, wrong: -0.5, pass: 10 },
+        PS: { correct: 2, wrong: -0.5, pass: 10 },
+      };
+
+      let engPMarks = 0, engOMarks = 0, asMarks = 0, psMarks = 0;
+
+      for (const q of questions) {
+        const userAnswer = answers[String(q.id)];
+        const section = q.section as string;
+        const rules = markingRules[section];
+        if (!rules) continue;
+
+        if (userAnswer === undefined || userAnswer === null || userAnswer === -1) {
+          continue;
+        }
+
+        const isCorrect = userAnswer === q.correctAnswer;
+        const mark = isCorrect ? rules.correct : rules.wrong;
+
+        if (section === "EngP") engPMarks += mark;
+        else if (section === "EngO") engOMarks += mark;
+        else if (section === "AS") asMarks += mark;
+        else if (section === "PS") psMarks += mark;
+      }
+
+      let totalMarks = engPMarks + engOMarks + asMarks + psMarks;
+      let netMarks = totalMarks;
+
+      if (attemptNumber >= 2) {
+        netMarks -= 3;
+      }
+
+      const passedEngP = engPMarks >= markingRules.EngP.pass;
+      const passedAS = asMarks >= markingRules.AS.pass;
+      const passedPS = psMarks >= markingRules.PS.pass;
+      const passedOverall = netMarks >= 40;
+      const passed = passedEngP && passedAS && passedPS && passedOverall;
+
+      const submission = await storage.createSubmission({
+        mockTestId,
+        userId,
+        answers,
+        totalMarks,
+        engPMarks,
+        engOMarks,
+        asMarks,
+        psMarks,
+        netMarks,
+        passed,
+        isSubmitted: true,
+        submittedAt: new Date(),
+      });
+
+      // Send email notification
+      try {
+        const user = await storage.getUser(userId);
+        if (user?.email) {
+          const statusColor = passed ? "#059669" : "#eb202a";
+          const statusText = passed ? "PASSED" : "NOT PASSED";
+          await transporter.sendMail({
+            from: `"Crack-CU" <${process.env.SMTP_USER}>`,
+            to: user.email,
+            subject: `Mock Test Result: ${test.title}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #eb202a;">Crack-CU Mock Test Result</h2>
+                <p>Hi ${user.fullName},</p>
+                <p>You have submitted <strong>${test.title}</strong>. Here are your results:</p>
+                <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                  <tr style="background: #f3f4f6;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>English Passage (EngP)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${engPMarks.toFixed(2)} ${passedEngP ? "(Pass)" : "(Fail, need 13)"}</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>English Other (EngO)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${engOMarks.toFixed(2)}</td></tr>
+                  <tr style="background: #f3f4f6;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Analytical Skill (AS)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${asMarks.toFixed(2)} ${passedAS ? "(Pass)" : "(Fail, need 10)"}</td></tr>
+                  <tr><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Problem Solving (PS)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${psMarks.toFixed(2)} ${passedPS ? "(Pass)" : "(Fail, need 10)"}</td></tr>
+                  <tr style="background: #f3f4f6;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Total Marks</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${totalMarks.toFixed(2)}</td></tr>
+                  ${attemptNumber >= 2 ? `<tr><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Attempt Penalty</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">-3</td></tr>` : ""}
+                  <tr style="background: #1f2937; color: white;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Net Marks</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${netMarks.toFixed(2)}</td></tr>
+                </table>
+                <p style="font-size: 18px; font-weight: bold; color: ${statusColor};">Status: ${statusText}</p>
+                <p style="color: #6b7280; font-size: 14px;">Attempt #${attemptNumber} | Submitted at: ${formatBDTime(new Date())} (BST)</p>
+                <hr style="margin: 20px 0;" />
+                <p style="color: #6b7280; font-size: 12px;">Don't Just Study, Crack It! - Crack-CU</p>
+              </div>
+            `,
+          });
+        }
+      } catch (emailErr) {
+        console.error("Failed to send submission email:", emailErr);
+      }
+
+      res.json(submission);
+    } catch (error: any) {
+      console.error("Submission error:", error);
+      res.status(500).json({ message: error.message || "Submission failed" });
     }
   });
 
@@ -332,8 +498,8 @@ export async function registerRoutes(
       const data = { ...req.body, createdBy: req.session.userId };
       if (data.duration) data.duration = Number(data.duration);
       if (data.publishTime) {
-        const parsed = new Date(data.publishTime);
-        if (isNaN(parsed.getTime())) return res.status(400).json({ message: "Invalid publish time" });
+        const parsed = parseBDTime(data.publishTime);
+        if (!parsed) return res.status(400).json({ message: "Invalid publish time" });
         data.publishTime = parsed;
       } else {
         return res.status(400).json({ message: "Publish time is required" });
@@ -355,8 +521,8 @@ export async function registerRoutes(
       if (title !== undefined) data.title = title;
       if (tag !== undefined) data.tag = tag;
       if (publishTime) {
-        const parsed = new Date(publishTime);
-        if (isNaN(parsed.getTime())) return res.status(400).json({ message: "Invalid publish time" });
+        const parsed = parseBDTime(publishTime);
+        if (!parsed) return res.status(400).json({ message: "Invalid publish time" });
         data.publishTime = parsed;
       }
       if (duration !== undefined) data.duration = Number(duration);

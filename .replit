@@ -44,5 +44,5 @@ integrations = ["javascript_auth_all_persistance:1.0.0", "javascript_database:1.
 [userenv]
 
 [userenv.shared]
-SMTP_USER = "crack.info@gmail.com"
+SMTP_USER = "crackcu.info@gmail.com"
 SMTP_PASS = "nuon lxjf ntvm ylin"

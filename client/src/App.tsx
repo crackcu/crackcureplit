@@ -21,6 +21,7 @@ const ContactPage = lazy(() => import("@/pages/contact"));
 const AuthPage = lazy(() => import("@/pages/auth-page"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const AdminDashboard = lazy(() => import("@/pages/admin"));
+const MockExamPage = lazy(() => import("@/pages/mock-exam"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
@@ -38,6 +39,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/courses" component={CoursesPage} />
         <Route path="/mock-tests" component={MockTestsPage} />
+        <Route path="/mock-tests/:id" component={MockExamPage} />
         <Route path="/classes" component={ClassesPage} />
         <Route path="/resources" component={ResourcesPage} />
         <Route path="/notices" component={NoticesPage} />
