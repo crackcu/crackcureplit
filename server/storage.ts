@@ -58,6 +58,27 @@ export interface IStorage {
   getUserSubmissions(userId: number): Promise<MockSubmission[]>;
   updateSubmission(id: number, data: Partial<MockSubmission>): Promise<MockSubmission | undefined>;
 
+  updateCourse(id: number, data: Partial<Course>): Promise<Course | undefined>;
+  deleteCourse(id: number): Promise<boolean>;
+
+  updateMockTest(id: number, data: Partial<MockTest>): Promise<MockTest | undefined>;
+  deleteMockTest(id: number): Promise<boolean>;
+
+  updateClass(id: number, data: Partial<Class>): Promise<Class | undefined>;
+  deleteClass(id: number): Promise<boolean>;
+
+  updateResource(id: number, data: Partial<Resource>): Promise<Resource | undefined>;
+  deleteResource(id: number): Promise<boolean>;
+
+  updateNotice(id: number, data: Partial<Notice>): Promise<Notice | undefined>;
+  deleteNotice(id: number): Promise<boolean>;
+
+  updateHeroBanner(id: number, data: Partial<HeroBanner>): Promise<HeroBanner | undefined>;
+  deleteHeroBanner(id: number): Promise<boolean>;
+
+  updateTeamMember(id: number, data: Partial<TeamMember>): Promise<TeamMember | undefined>;
+  deleteTeamMember(id: number): Promise<boolean>;
+
   createEnrollment(data: InsertEnrollment): Promise<Enrollment>;
   getUserEnrollments(userId: number): Promise<Enrollment[]>;
   getEnrollment(userId: number, courseId: number): Promise<Enrollment | undefined>;
@@ -197,6 +218,77 @@ export class DatabaseStorage implements IStorage {
   async createTeamMember(data: InsertTeamMember): Promise<TeamMember> {
     const [member] = await db.insert(teamMembers).values(data).returning();
     return member;
+  }
+
+  async updateCourse(id: number, data: Partial<Course>): Promise<Course | undefined> {
+    const [course] = await db.update(courses).set(data).where(eq(courses.id, id)).returning();
+    return course;
+  }
+
+  async deleteCourse(id: number): Promise<boolean> {
+    const result = await db.delete(courses).where(eq(courses.id, id));
+    return true;
+  }
+
+  async updateMockTest(id: number, data: Partial<MockTest>): Promise<MockTest | undefined> {
+    const [test] = await db.update(mockTests).set(data).where(eq(mockTests.id, id)).returning();
+    return test;
+  }
+
+  async deleteMockTest(id: number): Promise<boolean> {
+    await db.delete(mockSubmissions).where(eq(mockSubmissions.mockTestId, id));
+    await db.delete(mockTests).where(eq(mockTests.id, id));
+    return true;
+  }
+
+  async updateClass(id: number, data: Partial<Class>): Promise<Class | undefined> {
+    const [cls] = await db.update(classes).set(data).where(eq(classes.id, id)).returning();
+    return cls;
+  }
+
+  async deleteClass(id: number): Promise<boolean> {
+    await db.delete(classes).where(eq(classes.id, id));
+    return true;
+  }
+
+  async updateResource(id: number, data: Partial<Resource>): Promise<Resource | undefined> {
+    const [resource] = await db.update(resources).set(data).where(eq(resources.id, id)).returning();
+    return resource;
+  }
+
+  async deleteResource(id: number): Promise<boolean> {
+    await db.delete(resources).where(eq(resources.id, id));
+    return true;
+  }
+
+  async updateNotice(id: number, data: Partial<Notice>): Promise<Notice | undefined> {
+    const [notice] = await db.update(notices).set(data).where(eq(notices.id, id)).returning();
+    return notice;
+  }
+
+  async deleteNotice(id: number): Promise<boolean> {
+    await db.delete(notices).where(eq(notices.id, id));
+    return true;
+  }
+
+  async updateHeroBanner(id: number, data: Partial<HeroBanner>): Promise<HeroBanner | undefined> {
+    const [banner] = await db.update(heroBanners).set(data).where(eq(heroBanners.id, id)).returning();
+    return banner;
+  }
+
+  async deleteHeroBanner(id: number): Promise<boolean> {
+    await db.delete(heroBanners).where(eq(heroBanners.id, id));
+    return true;
+  }
+
+  async updateTeamMember(id: number, data: Partial<TeamMember>): Promise<TeamMember | undefined> {
+    const [member] = await db.update(teamMembers).set(data).where(eq(teamMembers.id, id)).returning();
+    return member;
+  }
+
+  async deleteTeamMember(id: number): Promise<boolean> {
+    await db.delete(teamMembers).where(eq(teamMembers.id, id));
+    return true;
   }
 
   async createSubmission(data: InsertMockSubmission): Promise<MockSubmission> {

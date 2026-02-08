@@ -23,13 +23,19 @@ import {
   Bell,
   Plus,
   Image as ImageIcon,
-  Settings,
   Shield,
   Loader2,
-  UserPlus,
+  Trash2,
+  Pencil,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Eye,
+  EyeOff,
+  X,
 } from "lucide-react";
 import type { User, Course, MockTest, Class, Resource, Notice, TeamMember, HeroBanner } from "@shared/schema";
-import { MOCK_TAGS, CLASS_TAGS, RESOURCE_TAGS, ACCESS_LEVELS, USER_ROLES } from "@shared/schema";
+import { MOCK_TAGS, CLASS_TAGS, RESOURCE_TAGS, ACCESS_LEVELS, USER_ROLES, NOTICE_TAGS } from "@shared/schema";
 import { Redirect } from "wouter";
 
 export default function AdminDashboard() {
@@ -108,6 +114,8 @@ function OverviewTab() {
 function UsersTab() {
   const { data: allUsers, isLoading } = useQuery<User[]>({ queryKey: ["/api/admin/users"] });
   const { toast } = useToast();
+  const [expandedUser, setExpandedUser] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
 
   const updateRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: number; role: string }) => {
@@ -141,20 +149,34 @@ function UsersTab() {
 
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
+  const filtered = allUsers?.filter((u) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return u.fullName.toLowerCase().includes(s) || u.username.toLowerCase().includes(s) || u.whatsapp.includes(s) || u.email.toLowerCase().includes(s);
+  });
+
   return (
     <div className="space-y-3">
-      {allUsers?.map((u) => (
+      <Input
+        placeholder="Search by name, username, email, or whatsapp..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-md"
+        data-testid="input-search-users"
+      />
+      <p className="text-xs text-muted-foreground">{filtered?.length ?? 0} users found</p>
+      {filtered?.map((u) => (
         <Card key={u.id} data-testid={`card-user-${u.id}`}>
           <CardContent className="pt-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium text-sm">{u.fullName}</p>
                   <Badge variant="secondary" className="text-xs">{u.role}</Badge>
-                  {u.isPremium && <Badge className="bg-green-600 text-xs">Premium</Badge>}
+                  {u.isPremium && <Badge className="bg-success text-success-foreground text-xs">Premium</Badge>}
                   {u.isRestricted && <Badge variant="destructive" className="text-xs">Restricted</Badge>}
                 </div>
-                <p className="text-xs text-muted-foreground">@{u.username} | {u.whatsapp}</p>
+                <p className="text-xs text-muted-foreground">@{u.username} | {u.email} | {u.whatsapp}</p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <Select
@@ -174,138 +196,250 @@ function UsersTab() {
                   <Label className="text-xs">Restricted</Label>
                   <Switch checked={u.isRestricted} onCheckedChange={(v) => toggleRestriction.mutate({ userId: u.id, isRestricted: v })} data-testid={`switch-restrict-${u.id}`} />
                 </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setExpandedUser(expandedUser === u.id ? null : u.id)}
+                  data-testid={`button-expand-user-${u.id}`}
+                >
+                  {expandedUser === u.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
               </div>
             </div>
+
+            {expandedUser === u.id && (
+              <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Full Name</p>
+                  <p className="font-medium">{u.fullName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Email</p>
+                  <p className="font-medium">{u.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">WhatsApp</p>
+                  <p className="font-medium">{u.whatsapp}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Username</p>
+                  <p className="font-medium font-mono">{u.username}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">HSC Roll</p>
+                  <p className="font-medium">{u.hscRoll}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">HSC Reg</p>
+                  <p className="font-medium">{u.hscReg}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">HSC Year</p>
+                  <p className="font-medium">{u.hscYear}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">HSC Group</p>
+                  <p className="font-medium">{u.hscGroup}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">HSC Board</p>
+                  <p className="font-medium">{u.hscBoard}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">SSC Roll</p>
+                  <p className="font-medium">{u.sscRoll}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">SSC Reg</p>
+                  <p className="font-medium">{u.sscReg}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">SSC Year</p>
+                  <p className="font-medium">{u.sscYear}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">SSC Group</p>
+                  <p className="font-medium">{u.sscGroup}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">SSC Board</p>
+                  <p className="font-medium">{u.sscBoard}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Registered</p>
+                  <p className="font-medium">{u.createdAt ? format(new Date(u.createdAt), "PPp") : "N/A"}</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       ))}
-      {(!allUsers || allUsers.length === 0) && <p className="text-sm text-muted-foreground">No users found.</p>}
+      {(!filtered || filtered.length === 0) && <p className="text-sm text-muted-foreground">No users found.</p>}
     </div>
   );
 }
 
-function CreateItemForm({ endpoint, fields, queryKey, onCreated }: {
-  endpoint: string;
-  fields: { name: string; label: string; type?: string; options?: readonly string[]; required?: boolean }[];
-  queryKey: string;
-  onCreated?: () => void;
-}) {
+function useDeleteMutation(endpoint: string, queryKey: string) {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Record<string, any>>({});
-  const [isOpen, setIsOpen] = useState(false);
-
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => {
-      await apiRequest("POST", endpoint, data);
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `${endpoint}/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKey] });
-      toast({ title: "Created successfully" });
+      toast({ title: "Deleted successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+}
+
+function CoursesTab() {
+  const { data: courseList, isLoading } = useQuery<Course[]>({ queryKey: ["/api/admin/courses"] });
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const deleteMutation = useDeleteMutation("/api/admin/courses", "/api/admin/courses");
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/admin/courses", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/courses"] });
+      toast({ title: "Course created" });
       setFormData({});
-      setIsOpen(false);
-      onCreated?.();
+      setIsCreating(false);
     },
     onError: (error: Error) => {
       toast({ title: error.message, variant: "destructive" });
     },
   });
 
-  if (!isOpen) {
-    return (
-      <Button size="sm" onClick={() => setIsOpen(true)} data-testid="button-create-new">
-        <Plus className="h-3.5 w-3.5 mr-1" />
-        Create New
-      </Button>
-    );
-  }
-
-  return (
-    <Card className="mb-4">
-      <CardContent className="pt-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            createMutation.mutate(formData);
-          }}
-          className="space-y-3"
-        >
-          {fields.map((field) => (
-            <div key={field.name}>
-              <Label className="text-xs">{field.label}</Label>
-              {field.options ? (
-                <Select value={formData[field.name] || ""} onValueChange={(v) => setFormData({ ...formData, [field.name]: v })}>
-                  <SelectTrigger><SelectValue placeholder={`Select ${field.label}`} /></SelectTrigger>
-                  <SelectContent>
-                    {field.options.map((o) => (<SelectItem key={o} value={o}>{o}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-              ) : field.type === "textarea" ? (
-                <Textarea
-                  value={formData[field.name] || ""}
-                  onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                  className="text-sm"
-                />
-              ) : field.type === "switch" ? (
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData[field.name] ?? true}
-                    onCheckedChange={(v) => setFormData({ ...formData, [field.name]: v })}
-                  />
-                </div>
-              ) : (
-                <Input
-                  type={field.type || "text"}
-                  value={formData[field.name] || ""}
-                  onChange={(e) => setFormData({ ...formData, [field.name]: field.type === "number" ? Number(e.target.value) : e.target.value })}
-                  required={field.required}
-                  className="text-sm"
-                />
-              )}
-            </div>
-          ))}
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={createMutation.isPending}>
-              {createMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-              Create
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsOpen(false)}>Cancel</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CoursesTab() {
-  const { data: courseList, isLoading } = useQuery<Course[]>({ queryKey: ["/api/admin/courses"] });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const data = { ...formData };
+    if (data.price !== undefined) data.price = Number(data.price) || 0;
+    if (data.offerPrice) data.offerPrice = Number(data.offerPrice);
+    if (!data.access) data.access = "all";
+    if (data.isVisible === undefined) data.isVisible = true;
+    createMutation.mutate(data);
+  };
 
   return (
     <div>
-      <CreateItemForm
-        endpoint="/api/admin/courses"
-        queryKey="/api/admin/courses"
-        fields={[
-          { name: "title", label: "Title", required: true },
-          { name: "description", label: "Description", type: "textarea", required: true },
-          { name: "price", label: "Price (BDT)", type: "number" },
-          { name: "offerPrice", label: "Offer Price", type: "number" },
-          { name: "access", label: "Access", options: ACCESS_LEVELS },
-          { name: "isVisible", label: "Visible", type: "switch" },
-        ]}
-      />
-      {isLoading ? <Skeleton className="h-48 w-full" /> : (
+      {!isCreating ? (
+        <Button size="sm" onClick={() => setIsCreating(true)} data-testid="button-create-course">
+          <Plus className="h-3.5 w-3.5 mr-1" /> Create Course
+        </Button>
+      ) : (
+        <Card className="mb-4">
+          <CardContent className="pt-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div>
+                <Label className="text-xs">Title</Label>
+                <Input value={formData.title || ""} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required data-testid="input-course-title" />
+              </div>
+              <div>
+                <Label className="text-xs">Description</Label>
+                <Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
+              </div>
+              <div>
+                <Label className="text-xs">Banner Image URL</Label>
+                <Input value={formData.bannerImage || ""} onChange={(e) => setFormData({ ...formData, bannerImage: e.target.value })} placeholder="https://..." />
+              </div>
+              <div className="flex items-center gap-3 py-1">
+                <Label className="text-xs">Free Course</Label>
+                <Switch
+                  checked={formData.isFree ?? false}
+                  onCheckedChange={(v) => setFormData({ ...formData, isFree: v, price: v ? 0 : formData.price, offerPrice: v ? "" : formData.offerPrice })}
+                  data-testid="switch-free-course"
+                />
+              </div>
+              {!formData.isFree && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Price (BDT)</Label>
+                    <Input type="number" value={formData.price ?? ""} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Offer Price (optional)</Label>
+                    <Input type="number" value={formData.offerPrice ?? ""} onChange={(e) => setFormData({ ...formData, offerPrice: e.target.value })} placeholder="Leave empty if no offer" />
+                  </div>
+                </div>
+              )}
+              <div>
+                <Label className="text-xs">Last Date (optional)</Label>
+                <Input type="datetime-local" value={formData.lastDate || ""} onChange={(e) => setFormData({ ...formData, lastDate: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Access</Label>
+                  <Select value={formData.access || "all"} onValueChange={(v) => setFormData({ ...formData, access: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ACCESS_LEVELS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <Label className="text-xs">Visible</Label>
+                  <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                  Create
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? <Skeleton className="h-48 w-full mt-4" /> : (
         <div className="space-y-2 mt-4">
           {courseList?.map((c) => (
-            <Card key={c.id}>
-              <CardContent className="pt-4 flex items-center justify-between gap-2 flex-wrap">
-                <div>
-                  <p className="text-sm font-medium">{c.title}</p>
-                  <p className="text-xs text-muted-foreground">BDT {c.price} | {c.access}</p>
+            <Card key={c.id} data-testid={`card-course-${c.id}`}>
+              <CardContent className="pt-4">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="flex gap-3 min-w-0">
+                    {c.bannerImage && (
+                      <img src={c.bannerImage} alt="" className="w-16 h-12 rounded-md object-cover shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{c.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {Number(c.price) === 0 ? "Free" : `BDT ${c.price}`}
+                        {c.offerPrice ? ` (Offer: BDT ${c.offerPrice})` : ""}
+                        {" | "}{c.access}
+                      </p>
+                      {c.lastDate && (
+                        <p className="text-xs text-muted-foreground">Last date: {format(new Date(c.lastDate), "PP")}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={c.isVisible ? "default" : "outline"}>
+                      {c.isVisible ? "Visible" : "Hidden"}
+                    </Badge>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => { if (confirm("Delete this course?")) deleteMutation.mutate(c.id); }}
+                      data-testid={`button-delete-course-${c.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-                <Badge variant={c.isVisible ? "default" : "outline"}>{c.isVisible ? "Visible" : "Hidden"}</Badge>
               </CardContent>
             </Card>
           ))}
+          {(!courseList || courseList.length === 0) && <p className="text-sm text-muted-foreground mt-4">No courses yet.</p>}
         </div>
       )}
     </div>
@@ -313,144 +447,878 @@ function CoursesTab() {
 }
 
 function MockTestsTab() {
+  const { data: testList, isLoading } = useQuery<MockTest[]>({ queryKey: ["/api/admin/mock-tests"] });
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [questionsJson, setQuestionsJson] = useState("");
+  const [jsonError, setJsonError] = useState("");
+  const deleteMutation = useDeleteMutation("/api/admin/mock-tests", "/api/admin/mock-tests");
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/admin/mock-tests", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/mock-tests"] });
+      toast({ title: "Mock test created" });
+      setFormData({});
+      setQuestionsJson("");
+      setIsCreating(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    let parsedQuestions: any[] = [];
+    if (questionsJson.trim()) {
+      try {
+        parsedQuestions = JSON.parse(questionsJson);
+        if (!Array.isArray(parsedQuestions)) {
+          setJsonError("Questions must be a JSON array");
+          return;
+        }
+        setJsonError("");
+      } catch {
+        setJsonError("Invalid JSON format. Please check your syntax.");
+        return;
+      }
+    }
+    const data = {
+      ...formData,
+      questions: parsedQuestions,
+      duration: Number(formData.duration) || 60,
+      isVisible: formData.isVisible ?? true,
+      access: formData.access || "all",
+    };
+    createMutation.mutate(data);
+  };
+
+  const sampleJson = `[
+  {
+    "id": 1,
+    "passage": "This is a test passage.",
+    "section": "EngP",
+    "question": "What is the purpose of this passage?",
+    "image": null,
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 0
+  },
+  {
+    "id": 2,
+    "passage": null,
+    "section": "EngO",
+    "question": "Choose the correct synonym.",
+    "image": null,
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 2
+  },
+  {
+    "id": 3,
+    "passage": null,
+    "section": "AS",
+    "question": "Solve the analytical problem.",
+    "image": null,
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 1
+  },
+  {
+    "id": 4,
+    "passage": null,
+    "section": "PS",
+    "question": "Solve the math problem.",
+    "image": null,
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 3
+  }
+]`;
+
   return (
     <div>
-      <CreateItemForm
-        endpoint="/api/admin/mock-tests"
-        queryKey="/api/admin/mock-tests"
-        fields={[
-          { name: "title", label: "Title", required: true },
-          { name: "tag", label: "Tag", options: MOCK_TAGS },
-          { name: "publishTime", label: "Publish Time (ISO)", required: true },
-          { name: "duration", label: "Duration (min)", type: "number" },
-          { name: "access", label: "Access", options: ACCESS_LEVELS },
-          { name: "isVisible", label: "Visible", type: "switch" },
-        ]}
-      />
-      <AdminListView queryKey="/api/admin/mock-tests" />
+      {!isCreating ? (
+        <Button size="sm" onClick={() => setIsCreating(true)} data-testid="button-create-mock">
+          <Plus className="h-3.5 w-3.5 mr-1" /> Create Mock Test
+        </Button>
+      ) : (
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-base">Create Mock Test</CardTitle>
+              <Button size="icon" variant="ghost" onClick={() => setIsCreating(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label className="text-xs">Title</Label>
+                <Input value={formData.title || ""} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required data-testid="input-mock-title" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Tag</Label>
+                  <Select value={formData.tag || ""} onValueChange={(v) => setFormData({ ...formData, tag: v })}>
+                    <SelectTrigger data-testid="select-mock-tag"><SelectValue placeholder="Select tag" /></SelectTrigger>
+                    <SelectContent>
+                      {MOCK_TAGS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Duration (minutes)</Label>
+                  <Input type="number" value={formData.duration ?? 60} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Publish Date & Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={formData.publishTime || ""}
+                  onChange={(e) => setFormData({ ...formData, publishTime: e.target.value })}
+                  required
+                  data-testid="input-mock-publish-time"
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Access</Label>
+                  <Select value={formData.access || "all"} onValueChange={(v) => setFormData({ ...formData, access: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ACCESS_LEVELS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <Label className="text-xs">Visible</Label>
+                  <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs">Questions (JSON format)</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQuestionsJson(sampleJson)}
+                    data-testid="button-load-sample"
+                  >
+                    Load Sample
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Sections: EngP (English Passage), EngO (English Other), AS (Analytical Skill), PS (Problem Solving).
+                  correctAnswer: 0=A, 1=B, 2=C, 3=D. Set "image" to a URL or null.
+                </p>
+                <Textarea
+                  value={questionsJson}
+                  onChange={(e) => { setQuestionsJson(e.target.value); setJsonError(""); }}
+                  rows={12}
+                  className="font-mono text-xs"
+                  placeholder={`Paste your questions JSON here...`}
+                  data-testid="textarea-mock-questions"
+                />
+                {jsonError && <p className="text-xs text-destructive mt-1">{jsonError}</p>}
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                  Create Mock Test
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? <Skeleton className="h-48 w-full mt-4" /> : (
+        <div className="space-y-2 mt-4">
+          {testList?.map((t) => (
+            <MockTestCard key={t.id} test={t} onDelete={() => deleteMutation.mutate(t.id)} />
+          ))}
+          {(!testList || testList.length === 0) && <p className="text-sm text-muted-foreground mt-4">No mock tests yet.</p>}
+        </div>
+      )}
     </div>
   );
 }
 
+function MockTestCard({ test, onDelete }: { test: MockTest; onDelete: () => void }) {
+  const questions = Array.isArray(test.questions) ? test.questions : [];
+  return (
+    <Card data-testid={`card-mock-${test.id}`}>
+      <CardContent className="pt-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">{test.title}</p>
+            <div className="flex items-center gap-2 flex-wrap mt-1">
+              <Badge variant="secondary" className="text-xs">{test.tag}</Badge>
+              <span className="text-xs text-muted-foreground">{test.duration} min</span>
+              <span className="text-xs text-muted-foreground">{questions.length} questions</span>
+              <span className="text-xs text-muted-foreground">{test.access}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Publish: {test.publishTime ? format(new Date(test.publishTime), "PPp") : "N/A"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={test.isVisible ? "default" : "outline"}>
+              {test.isVisible ? "Visible" : "Hidden"}
+            </Badge>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => { if (confirm("Delete this mock test and all its submissions?")) onDelete(); }}
+              data-testid={`button-delete-mock-${test.id}`}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ClassesTab() {
+  const { data: classList, isLoading } = useQuery<Class[]>({ queryKey: ["/api/admin/classes"] });
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [editData, setEditData] = useState<Record<string, any>>({});
+  const deleteMutation = useDeleteMutation("/api/admin/classes", "/api/admin/classes");
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/admin/classes", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/classes"] });
+      toast({ title: "Class created" });
+      setFormData({});
+      setIsCreating(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      await apiRequest("PATCH", `/api/admin/classes/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/classes"] });
+      toast({ title: "Class updated" });
+      setEditingId(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
+  const startEdit = (cls: Class) => {
+    setEditingId(cls.id);
+    setEditData({
+      title: cls.title,
+      videoUrl: cls.videoUrl,
+      tag: cls.tag,
+      description: cls.description || "",
+      thumbnail: cls.thumbnail || "",
+      access: cls.access,
+      isVisible: cls.isVisible,
+    });
+  };
+
   return (
     <div>
-      <CreateItemForm
-        endpoint="/api/admin/classes"
-        queryKey="/api/admin/classes"
-        fields={[
-          { name: "title", label: "Title", required: true },
-          { name: "videoUrl", label: "Video URL", required: true },
-          { name: "tag", label: "Tag", options: CLASS_TAGS },
-          { name: "description", label: "Description", type: "textarea" },
-          { name: "access", label: "Access", options: ACCESS_LEVELS },
-          { name: "isVisible", label: "Visible", type: "switch" },
-        ]}
-      />
-      <AdminListView queryKey="/api/admin/classes" />
+      {!isCreating ? (
+        <Button size="sm" onClick={() => setIsCreating(true)} data-testid="button-create-class">
+          <Plus className="h-3.5 w-3.5 mr-1" /> Create Class
+        </Button>
+      ) : (
+        <Card className="mb-4">
+          <CardContent className="pt-4">
+            <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate({ ...formData, isVisible: formData.isVisible ?? true, access: formData.access || "all" }); }} className="space-y-3">
+              <div>
+                <Label className="text-xs">Title</Label>
+                <Input value={formData.title || ""} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required data-testid="input-class-title" />
+              </div>
+              <div>
+                <Label className="text-xs">Video URL</Label>
+                <Input value={formData.videoUrl || ""} onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })} required placeholder="YouTube/Drive URL" />
+              </div>
+              <div>
+                <Label className="text-xs">Thumbnail URL (optional)</Label>
+                <Input value={formData.thumbnail || ""} onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." />
+              </div>
+              <div>
+                <Label className="text-xs">Tag</Label>
+                <Select value={formData.tag || ""} onValueChange={(v) => setFormData({ ...formData, tag: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select tag" /></SelectTrigger>
+                  <SelectContent>
+                    {CLASS_TAGS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Description</Label>
+                <Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Access</Label>
+                  <Select value={formData.access || "all"} onValueChange={(v) => setFormData({ ...formData, access: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ACCESS_LEVELS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <Label className="text-xs">Visible</Label>
+                  <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                  Create
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? <Skeleton className="h-48 w-full mt-4" /> : (
+        <div className="space-y-2 mt-4">
+          {classList?.map((cls) => (
+            <Card key={cls.id} data-testid={`card-class-${cls.id}`}>
+              <CardContent className="pt-4">
+                {editingId === cls.id ? (
+                  <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate({ id: cls.id, data: editData }); }} className="space-y-3">
+                    <div>
+                      <Label className="text-xs">Title</Label>
+                      <Input value={editData.title || ""} onChange={(e) => setEditData({ ...editData, title: e.target.value })} required />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Video URL</Label>
+                      <Input value={editData.videoUrl || ""} onChange={(e) => setEditData({ ...editData, videoUrl: e.target.value })} required />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Thumbnail URL</Label>
+                      <Input value={editData.thumbnail || ""} onChange={(e) => setEditData({ ...editData, thumbnail: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Tag</Label>
+                      <Select value={editData.tag || ""} onValueChange={(v) => setEditData({ ...editData, tag: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CLASS_TAGS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Description</Label>
+                      <Textarea value={editData.description || ""} onChange={(e) => setEditData({ ...editData, description: e.target.value })} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Access</Label>
+                        <Select value={editData.access || "all"} onValueChange={(v) => setEditData({ ...editData, access: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {ACCESS_LEVELS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2 pt-5">
+                        <Label className="text-xs">Visible</Label>
+                        <Switch checked={editData.isVisible ?? true} onCheckedChange={(v) => setEditData({ ...editData, isVisible: v })} />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" size="sm" disabled={updateMutation.isPending}>
+                        {updateMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                        Save
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex gap-3 min-w-0">
+                      {cls.thumbnail && (
+                        <img src={cls.thumbnail} alt="" className="w-16 h-12 rounded-md object-cover shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{cls.title}</p>
+                        <div className="flex items-center gap-2 flex-wrap mt-1">
+                          <Badge variant="secondary" className="text-xs">{cls.tag}</Badge>
+                          <span className="text-xs text-muted-foreground">{cls.access}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant={cls.isVisible ? "default" : "outline"}>
+                        {cls.isVisible ? "Visible" : "Hidden"}
+                      </Badge>
+                      <Button size="icon" variant="ghost" onClick={() => startEdit(cls)} data-testid={`button-edit-class-${cls.id}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => { if (confirm("Delete this class?")) deleteMutation.mutate(cls.id); }}
+                        data-testid={`button-delete-class-${cls.id}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+          {(!classList || classList.length === 0) && <p className="text-sm text-muted-foreground mt-4">No classes yet.</p>}
+        </div>
+      )}
     </div>
   );
 }
 
 function ResourcesTab() {
+  const { data: resourceList, isLoading } = useQuery<Resource[]>({ queryKey: ["/api/admin/resources"] });
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const deleteMutation = useDeleteMutation("/api/admin/resources", "/api/admin/resources");
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/admin/resources", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/resources"] });
+      toast({ title: "Resource created" });
+      setFormData({});
+      setIsCreating(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div>
-      <CreateItemForm
-        endpoint="/api/admin/resources"
-        queryKey="/api/admin/resources"
-        fields={[
-          { name: "title", label: "Title", required: true },
-          { name: "fileUrl", label: "File URL", required: true },
-          { name: "tag", label: "Tag", options: RESOURCE_TAGS },
-          { name: "description", label: "Description", type: "textarea" },
-          { name: "access", label: "Access", options: ACCESS_LEVELS },
-          { name: "isVisible", label: "Visible", type: "switch" },
-        ]}
-      />
-      <AdminListView queryKey="/api/admin/resources" />
+      {!isCreating ? (
+        <Button size="sm" onClick={() => setIsCreating(true)} data-testid="button-create-resource">
+          <Plus className="h-3.5 w-3.5 mr-1" /> Create Resource
+        </Button>
+      ) : (
+        <Card className="mb-4">
+          <CardContent className="pt-4">
+            <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate({ ...formData, isVisible: formData.isVisible ?? true, access: formData.access || "all" }); }} className="space-y-3">
+              <div>
+                <Label className="text-xs">Title</Label>
+                <Input value={formData.title || ""} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+              </div>
+              <div>
+                <Label className="text-xs">File URL</Label>
+                <Input value={formData.fileUrl || ""} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} required placeholder="Google Drive / link" />
+              </div>
+              <div>
+                <Label className="text-xs">Tag</Label>
+                <Select value={formData.tag || ""} onValueChange={(v) => setFormData({ ...formData, tag: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select tag" /></SelectTrigger>
+                  <SelectContent>
+                    {RESOURCE_TAGS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Description</Label>
+                <Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Access</Label>
+                  <Select value={formData.access || "all"} onValueChange={(v) => setFormData({ ...formData, access: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ACCESS_LEVELS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <Label className="text-xs">Visible</Label>
+                  <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                  Create
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? <Skeleton className="h-48 w-full mt-4" /> : (
+        <div className="space-y-2 mt-4">
+          {resourceList?.map((r) => (
+            <Card key={r.id} data-testid={`card-resource-${r.id}`}>
+              <CardContent className="pt-4 flex items-center justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{r.title}</p>
+                  <div className="flex items-center gap-2 flex-wrap mt-1">
+                    <Badge variant="secondary" className="text-xs">{r.tag}</Badge>
+                    <span className="text-xs text-muted-foreground">{r.access}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Badge variant={r.isVisible ? "default" : "outline"}>
+                    {r.isVisible ? "Visible" : "Hidden"}
+                  </Badge>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => { if (confirm("Delete this resource?")) deleteMutation.mutate(r.id); }}
+                    data-testid={`button-delete-resource-${r.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {(!resourceList || resourceList.length === 0) && <p className="text-sm text-muted-foreground mt-4">No resources yet.</p>}
+        </div>
+      )}
     </div>
   );
 }
 
 function NoticesTab() {
+  const { data: noticeList, isLoading } = useQuery<Notice[]>({ queryKey: ["/api/admin/notices"] });
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const deleteMutation = useDeleteMutation("/api/admin/notices", "/api/admin/notices");
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/admin/notices", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notices"] });
+      toast({ title: "Notice created" });
+      setFormData({});
+      setIsCreating(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div>
-      <CreateItemForm
-        endpoint="/api/admin/notices"
-        queryKey="/api/admin/notices"
-        fields={[
-          { name: "title", label: "Title", required: true },
-          { name: "description", label: "Description", type: "textarea", required: true },
-          { name: "tag", label: "Tag", options: ["Admission", "CU Notice", "Crack-CU Notice"] },
-          { name: "isVisible", label: "Visible", type: "switch" },
-        ]}
-      />
-      <AdminListView queryKey="/api/admin/notices" />
+      {!isCreating ? (
+        <Button size="sm" onClick={() => setIsCreating(true)} data-testid="button-create-notice">
+          <Plus className="h-3.5 w-3.5 mr-1" /> Create Notice
+        </Button>
+      ) : (
+        <Card className="mb-4">
+          <CardContent className="pt-4">
+            <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate({ ...formData, isVisible: formData.isVisible ?? true }); }} className="space-y-3">
+              <div>
+                <Label className="text-xs">Title</Label>
+                <Input value={formData.title || ""} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+              </div>
+              <div>
+                <Label className="text-xs">Description</Label>
+                <Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
+              </div>
+              <div>
+                <Label className="text-xs">Tag</Label>
+                <Select value={formData.tag || ""} onValueChange={(v) => setFormData({ ...formData, tag: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select tag" /></SelectTrigger>
+                  <SelectContent>
+                    {NOTICE_TAGS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Visible</Label>
+                <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                  Create
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? <Skeleton className="h-48 w-full mt-4" /> : (
+        <div className="space-y-2 mt-4">
+          {noticeList?.map((n) => (
+            <Card key={n.id} data-testid={`card-notice-${n.id}`}>
+              <CardContent className="pt-4 flex items-center justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{n.title}</p>
+                  <div className="flex items-center gap-2 flex-wrap mt-1">
+                    <Badge variant="secondary" className="text-xs">{n.tag}</Badge>
+                    <span className="text-xs text-muted-foreground">{n.createdAt ? format(new Date(n.createdAt), "PP") : ""}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Badge variant={n.isVisible ? "default" : "outline"}>
+                    {n.isVisible ? "Visible" : "Hidden"}
+                  </Badge>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => { if (confirm("Delete this notice?")) deleteMutation.mutate(n.id); }}
+                    data-testid={`button-delete-notice-${n.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {(!noticeList || noticeList.length === 0) && <p className="text-sm text-muted-foreground mt-4">No notices yet.</p>}
+        </div>
+      )}
     </div>
   );
 }
 
 function BannersTab() {
+  const { data: bannerList, isLoading } = useQuery<HeroBanner[]>({ queryKey: ["/api/admin/banners"] });
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const deleteMutation = useDeleteMutation("/api/admin/banners", "/api/admin/banners");
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/admin/banners", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/banners"] });
+      toast({ title: "Banner created" });
+      setFormData({});
+      setIsCreating(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div>
-      <CreateItemForm
-        endpoint="/api/admin/banners"
-        queryKey="/api/admin/banners"
-        fields={[
-          { name: "title", label: "Title", required: true },
-          { name: "description", label: "Description", type: "textarea" },
-          { name: "imageUrl", label: "Image URL" },
-          { name: "linkUrl", label: "Link URL" },
-          { name: "sortOrder", label: "Sort Order", type: "number" },
-          { name: "isVisible", label: "Visible", type: "switch" },
-        ]}
-      />
-      <AdminListView queryKey="/api/admin/banners" />
+      {!isCreating ? (
+        <Button size="sm" onClick={() => setIsCreating(true)} data-testid="button-create-banner">
+          <Plus className="h-3.5 w-3.5 mr-1" /> Create Banner
+        </Button>
+      ) : (
+        <Card className="mb-4">
+          <CardContent className="pt-4">
+            <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate({ ...formData, isVisible: formData.isVisible ?? true, sortOrder: Number(formData.sortOrder) || 0 }); }} className="space-y-3">
+              <div>
+                <Label className="text-xs">Title</Label>
+                <Input value={formData.title || ""} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+              </div>
+              <div>
+                <Label className="text-xs">Description</Label>
+                <Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+              </div>
+              <div>
+                <Label className="text-xs">Image URL</Label>
+                <Input value={formData.imageUrl || ""} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="https://..." />
+              </div>
+              <div>
+                <Label className="text-xs">Link URL</Label>
+                <Input value={formData.linkUrl || ""} onChange={(e) => setFormData({ ...formData, linkUrl: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Sort Order</Label>
+                  <Input type="number" value={formData.sortOrder ?? 0} onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })} />
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <Label className="text-xs">Visible</Label>
+                  <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                  Create
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? <Skeleton className="h-48 w-full mt-4" /> : (
+        <div className="space-y-2 mt-4">
+          {bannerList?.map((b) => (
+            <Card key={b.id} data-testid={`card-banner-${b.id}`}>
+              <CardContent className="pt-4 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex gap-3 min-w-0">
+                  {b.imageUrl && <img src={b.imageUrl} alt="" className="w-20 h-12 rounded-md object-cover shrink-0" />}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{b.title}</p>
+                    <p className="text-xs text-muted-foreground">Order: {b.sortOrder}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Badge variant={b.isVisible ? "default" : "outline"}>
+                    {b.isVisible ? "Visible" : "Hidden"}
+                  </Badge>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => { if (confirm("Delete this banner?")) deleteMutation.mutate(b.id); }}
+                    data-testid={`button-delete-banner-${b.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {(!bannerList || bannerList.length === 0) && <p className="text-sm text-muted-foreground mt-4">No banners yet.</p>}
+        </div>
+      )}
     </div>
   );
 }
 
 function TeamTab() {
+  const { data: teamList, isLoading } = useQuery<TeamMember[]>({ queryKey: ["/api/admin/team"] });
+  const { toast } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const deleteMutation = useDeleteMutation("/api/admin/team", "/api/admin/team");
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/admin/team", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/team"] });
+      toast({ title: "Team member created" });
+      setFormData({});
+      setIsCreating(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div>
-      <CreateItemForm
-        endpoint="/api/admin/team"
-        queryKey="/api/admin/team"
-        fields={[
-          { name: "name", label: "Name", required: true },
-          { name: "post", label: "Post/Title", required: true },
-          { name: "photo", label: "Photo URL" },
-          { name: "description", label: "Description", type: "textarea" },
-          { name: "sortOrder", label: "Sort Order", type: "number" },
-          { name: "isVisible", label: "Visible", type: "switch" },
-        ]}
-      />
-      <AdminListView queryKey="/api/admin/team" />
-    </div>
-  );
-}
-
-function AdminListView({ queryKey }: { queryKey: string }) {
-  const { data: items, isLoading } = useQuery<any[]>({ queryKey: [queryKey] });
-
-  if (isLoading) return <Skeleton className="h-32 w-full mt-4" />;
-
-  return (
-    <div className="space-y-2 mt-4">
-      {items?.map((item: any) => (
-        <Card key={item.id}>
-          <CardContent className="pt-4 flex items-center justify-between gap-2 flex-wrap">
-            <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{item.title || item.name}</p>
-              <p className="text-xs text-muted-foreground">{item.tag || item.post || ""}</p>
-            </div>
-            <Badge variant={item.isVisible !== false ? "default" : "outline"}>
-              {item.isVisible !== false ? "Visible" : "Hidden"}
-            </Badge>
+      {!isCreating ? (
+        <Button size="sm" onClick={() => setIsCreating(true)} data-testid="button-create-team">
+          <Plus className="h-3.5 w-3.5 mr-1" /> Add Team Member
+        </Button>
+      ) : (
+        <Card className="mb-4">
+          <CardContent className="pt-4">
+            <form onSubmit={(e) => { e.preventDefault(); createMutation.mutate({ ...formData, isVisible: formData.isVisible ?? true, sortOrder: Number(formData.sortOrder) || 0 }); }} className="space-y-3">
+              <div>
+                <Label className="text-xs">Name</Label>
+                <Input value={formData.name || ""} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+              </div>
+              <div>
+                <Label className="text-xs">Post / Title</Label>
+                <Input value={formData.post || ""} onChange={(e) => setFormData({ ...formData, post: e.target.value })} required />
+              </div>
+              <div>
+                <Label className="text-xs">Photo URL</Label>
+                <Input value={formData.photo || ""} onChange={(e) => setFormData({ ...formData, photo: e.target.value })} placeholder="https://..." />
+              </div>
+              <div>
+                <Label className="text-xs">Description</Label>
+                <Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Sort Order</Label>
+                  <Input type="number" value={formData.sortOrder ?? 0} onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })} />
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <Label className="text-xs">Visible</Label>
+                  <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+                  Create
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
-      ))}
-      {(!items || items.length === 0) && <p className="text-sm text-muted-foreground mt-4">No items yet.</p>}
+      )}
+
+      {isLoading ? <Skeleton className="h-48 w-full mt-4" /> : (
+        <div className="space-y-2 mt-4">
+          {teamList?.map((m) => (
+            <Card key={m.id} data-testid={`card-team-${m.id}`}>
+              <CardContent className="pt-4 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex gap-3 min-w-0">
+                  {m.photo && <img src={m.photo} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{m.name}</p>
+                    <p className="text-xs text-muted-foreground">{m.post}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Badge variant={m.isVisible ? "default" : "outline"}>
+                    {m.isVisible ? "Visible" : "Hidden"}
+                  </Badge>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => { if (confirm("Delete this team member?")) deleteMutation.mutate(m.id); }}
+                    data-testid={`button-delete-team-${m.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {(!teamList || teamList.length === 0) && <p className="text-sm text-muted-foreground mt-4">No team members yet.</p>}
+        </div>
+      )}
     </div>
   );
 }

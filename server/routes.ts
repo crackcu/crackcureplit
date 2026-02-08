@@ -290,15 +290,54 @@ export async function registerRoutes(
     }
   });
 
+  // ======= COURSES CRUD =======
   app.get("/api/admin/mock-tests", requireAdmin, async (_req, res) => {
     res.json(await storage.getAllMockTests());
   });
 
+  app.patch("/api/admin/courses/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title, description, bannerImage, lastDate, price, offerPrice, access, isVisible } = req.body;
+      const data: Record<string, any> = {};
+      if (title !== undefined) data.title = title;
+      if (description !== undefined) data.description = description;
+      if (bannerImage !== undefined) data.bannerImage = bannerImage || null;
+      if (lastDate !== undefined) data.lastDate = lastDate ? new Date(lastDate) : null;
+      if (price !== undefined) data.price = Number(price);
+      if (offerPrice !== undefined) data.offerPrice = offerPrice === "" || offerPrice === null ? null : Number(offerPrice);
+      if (access !== undefined) data.access = access;
+      if (isVisible !== undefined) data.isVisible = isVisible;
+      const updated = await storage.updateCourse(id, data);
+      if (!updated) return res.status(404).json({ message: "Course not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/courses/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCourse(id);
+      res.json({ message: "Deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ======= MOCK TESTS CRUD =======
   app.post("/api/admin/mock-tests", requireAdmin, async (req, res) => {
     try {
       const data = { ...req.body, createdBy: req.session.userId };
       if (data.duration) data.duration = Number(data.duration);
-      if (data.publishTime) data.publishTime = new Date(data.publishTime);
+      if (data.publishTime) {
+        const parsed = new Date(data.publishTime);
+        if (isNaN(parsed.getTime())) return res.status(400).json({ message: "Invalid publish time" });
+        data.publishTime = parsed;
+      } else {
+        return res.status(400).json({ message: "Publish time is required" });
+      }
       if (!data.questions) data.questions = [];
       if (data.isVisible === undefined) data.isVisible = true;
       const test = await storage.createMockTest(data);
@@ -308,6 +347,41 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/admin/mock-tests/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title, tag, publishTime, duration, questions, access, isVisible } = req.body;
+      const data: Record<string, any> = {};
+      if (title !== undefined) data.title = title;
+      if (tag !== undefined) data.tag = tag;
+      if (publishTime) {
+        const parsed = new Date(publishTime);
+        if (isNaN(parsed.getTime())) return res.status(400).json({ message: "Invalid publish time" });
+        data.publishTime = parsed;
+      }
+      if (duration !== undefined) data.duration = Number(duration);
+      if (questions !== undefined) data.questions = questions;
+      if (access !== undefined) data.access = access;
+      if (isVisible !== undefined) data.isVisible = isVisible;
+      const updated = await storage.updateMockTest(id, data);
+      if (!updated) return res.status(404).json({ message: "Mock test not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/mock-tests/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteMockTest(id);
+      res.json({ message: "Deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ======= CLASSES CRUD =======
   app.get("/api/admin/classes", requireAdmin, async (_req, res) => {
     res.json(await storage.getAllClasses());
   });
@@ -323,6 +397,37 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/admin/classes/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title, videoUrl, tag, description, thumbnail, access, isVisible } = req.body;
+      const data: Record<string, any> = {};
+      if (title !== undefined) data.title = title;
+      if (videoUrl !== undefined) data.videoUrl = videoUrl;
+      if (tag !== undefined) data.tag = tag;
+      if (description !== undefined) data.description = description;
+      if (thumbnail !== undefined) data.thumbnail = thumbnail || null;
+      if (access !== undefined) data.access = access;
+      if (isVisible !== undefined) data.isVisible = isVisible;
+      const updated = await storage.updateClass(id, data);
+      if (!updated) return res.status(404).json({ message: "Class not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/classes/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteClass(id);
+      res.json({ message: "Deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ======= RESOURCES CRUD =======
   app.get("/api/admin/resources", requireAdmin, async (_req, res) => {
     res.json(await storage.getAllResources());
   });
@@ -338,6 +443,28 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/admin/resources/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await storage.updateResource(id, req.body);
+      if (!updated) return res.status(404).json({ message: "Resource not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/resources/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteResource(id);
+      res.json({ message: "Deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ======= NOTICES CRUD =======
   app.get("/api/admin/notices", requireAdmin, async (_req, res) => {
     res.json(await storage.getAllNotices());
   });
@@ -353,6 +480,28 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/admin/notices/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await storage.updateNotice(id, req.body);
+      if (!updated) return res.status(404).json({ message: "Notice not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/notices/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteNotice(id);
+      res.json({ message: "Deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ======= BANNERS CRUD =======
   app.get("/api/admin/banners", requireAdmin, async (_req, res) => {
     res.json(await storage.getAllHeroBanners());
   });
@@ -369,6 +518,30 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/admin/banners/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const data = { ...req.body };
+      if (data.sortOrder !== undefined) data.sortOrder = Number(data.sortOrder);
+      const updated = await storage.updateHeroBanner(id, data);
+      if (!updated) return res.status(404).json({ message: "Banner not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/banners/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteHeroBanner(id);
+      res.json({ message: "Deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // ======= TEAM CRUD =======
   app.get("/api/admin/team", requireAdmin, async (_req, res) => {
     res.json(await storage.getAllTeamMembers());
   });
@@ -380,6 +553,29 @@ export async function registerRoutes(
       if (data.isVisible === undefined) data.isVisible = true;
       const member = await storage.createTeamMember(data);
       res.json(member);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/team/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const data = { ...req.body };
+      if (data.sortOrder !== undefined) data.sortOrder = Number(data.sortOrder);
+      const updated = await storage.updateTeamMember(id, data);
+      if (!updated) return res.status(404).json({ message: "Team member not found" });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/admin/team/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteTeamMember(id);
+      res.json({ message: "Deleted" });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
