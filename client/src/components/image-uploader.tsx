@@ -94,7 +94,7 @@ export function ImageUploader({ value, onChange, label = "Image", placeholder = 
           <input
             ref={fileRef}
             type="file"
-            accept="image/*"
+            accept="image/*,.webp,.png,.jpg,.jpeg,.gif,.svg,.bmp"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];

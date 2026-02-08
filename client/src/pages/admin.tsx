@@ -500,7 +500,8 @@ function MockTestForm({
       toast({ title: "Enter a question ID first", variant: "destructive" });
       return;
     }
-    if (!file.type.startsWith("image/")) {
+    const validImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml", "image/bmp", "image/avif"];
+    if (!file.type.startsWith("image/") && !validImageTypes.includes(file.type)) {
       toast({ title: "Please select an image file", variant: "destructive" });
       return;
     }
@@ -665,7 +666,7 @@ function MockTestForm({
                 <div className="flex items-center gap-2">
                   <Input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.webp,.png,.jpg,.jpeg,.gif,.svg,.bmp"
                     disabled={uploading}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
