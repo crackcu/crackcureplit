@@ -493,9 +493,25 @@ export async function registerRoutes(
   });
 
   // ======= MOCK TESTS CRUD =======
+  function mergeImageAssignments(questions: any[], imageAssignments?: any[]): any[] {
+    if (!imageAssignments || !Array.isArray(imageAssignments) || imageAssignments.length === 0) return questions;
+    const imageMap = new Map<number, string>();
+    for (const a of imageAssignments) {
+      if (a.questionId != null && a.imageUrl) {
+        imageMap.set(Number(a.questionId), a.imageUrl);
+      }
+    }
+    return questions.map((q: any) => {
+      const img = imageMap.get(Number(q.id));
+      if (img) return { ...q, image: img };
+      return q;
+    });
+  }
+
   app.post("/api/admin/mock-tests", requireAdmin, async (req, res) => {
     try {
-      const data = { ...req.body, createdBy: req.session.userId };
+      const { imageAssignments, ...rest } = req.body;
+      const data = { ...rest, createdBy: req.session.userId };
       if (data.duration) data.duration = Number(data.duration);
       if (data.publishTime) {
         const parsed = parseBDTime(data.publishTime);
@@ -505,6 +521,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Publish time is required" });
       }
       if (!data.questions) data.questions = [];
+      data.questions = mergeImageAssignments(data.questions, imageAssignments);
       if (data.isVisible === undefined) data.isVisible = true;
       const test = await storage.createMockTest(data);
       res.json(test);
@@ -516,7 +533,7 @@ export async function registerRoutes(
   app.patch("/api/admin/mock-tests/:id", requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { title, tag, publishTime, duration, questions, access, isVisible } = req.body;
+      const { title, tag, publishTime, duration, questions, access, isVisible, imageAssignments } = req.body;
       const data: Record<string, any> = {};
       if (title !== undefined) data.title = title;
       if (tag !== undefined) data.tag = tag;
@@ -526,7 +543,14 @@ export async function registerRoutes(
         data.publishTime = parsed;
       }
       if (duration !== undefined) data.duration = Number(duration);
-      if (questions !== undefined) data.questions = questions;
+      if (questions !== undefined) {
+        data.questions = mergeImageAssignments(questions, imageAssignments);
+      } else if (imageAssignments && Array.isArray(imageAssignments) && imageAssignments.length > 0) {
+        const existing = await storage.getMockTest(id);
+        if (existing && Array.isArray(existing.questions)) {
+          data.questions = mergeImageAssignments(existing.questions as any[], imageAssignments);
+        }
+      }
       if (access !== undefined) data.access = access;
       if (isVisible !== undefined) data.isVisible = isVisible;
       const updated = await storage.updateMockTest(id, data);

@@ -448,120 +448,229 @@ function CoursesTab() {
   );
 }
 
-interface QuestionItem {
-  id: number;
-  passage: string | null;
-  section: string;
-  question: string;
-  image: string | null;
-  options: string[];
-  correctAnswer: number;
+interface ImageAssignment {
+  questionId: number;
+  imageUrl: string;
 }
 
-function QuestionEditor({ questions, onChange }: { questions: QuestionItem[]; onChange: (q: QuestionItem[]) => void }) {
-  const addQuestion = () => {
-    const nextId = questions.length > 0 ? Math.max(...questions.map(q => q.id)) + 1 : 1;
-    onChange([...questions, { id: nextId, passage: null, section: "EngP", question: "", image: null, options: ["", "", "", ""], correctAnswer: 0 }]);
+function MockTestForm({
+  initialData,
+  onSubmit,
+  isPending,
+  onCancel,
+  title,
+}: {
+  initialData?: MockTest;
+  onSubmit: (data: any) => void;
+  isPending: boolean;
+  onCancel: () => void;
+  title: string;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<Record<string, any>>(() => {
+    if (initialData) {
+      const pt = initialData.publishTime
+        ? new Date(initialData.publishTime).toLocaleString("sv-SE", { timeZone: "Asia/Dhaka" }).replace(" ", "T").slice(0, 16)
+        : "";
+      return {
+        title: initialData.title,
+        tag: initialData.tag,
+        duration: initialData.duration,
+        publishTime: pt,
+        access: initialData.access,
+        isVisible: initialData.isVisible,
+      };
+    }
+    return {};
+  });
+  const [questionsJson, setQuestionsJson] = useState(() => {
+    if (initialData && Array.isArray(initialData.questions) && (initialData.questions as any[]).length > 0) {
+      return JSON.stringify(initialData.questions, null, 2);
+    }
+    return "";
+  });
+  const [jsonError, setJsonError] = useState("");
+  const [imageAssignments, setImageAssignments] = useState<ImageAssignment[]>([]);
+  const [assignId, setAssignId] = useState("");
+
+  const handleImageUploaded = (url: string) => {
+    if (!url) return;
+    const idNum = parseInt(assignId);
+    if (!assignId || isNaN(idNum)) {
+      toast({ title: "Enter a question ID first", variant: "destructive" });
+      return;
+    }
+    const existing = imageAssignments.find(a => a.questionId === idNum);
+    if (existing) {
+      setImageAssignments(imageAssignments.map(a => a.questionId === idNum ? { ...a, imageUrl: url } : a));
+    } else {
+      setImageAssignments([...imageAssignments, { questionId: idNum, imageUrl: url }]);
+    }
+    setAssignId("");
+    toast({ title: `Image assigned to question #${idNum}` });
   };
 
-  const updateQuestion = (index: number, field: string, value: any) => {
-    const updated = [...questions];
-    if (field === "id") {
-      const existingIds = updated.filter((_, i) => i !== index).map(q => q.id);
-      if (existingIds.includes(value)) {
+  const removeAssignment = (qId: number) => {
+    setImageAssignments(imageAssignments.filter(a => a.questionId !== qId));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    let finalQuestions: any[] = [];
+    if (questionsJson.trim()) {
+      try {
+        finalQuestions = JSON.parse(questionsJson);
+        if (!Array.isArray(finalQuestions)) {
+          setJsonError("Questions must be a JSON array");
+          return;
+        }
+        setJsonError("");
+      } catch {
+        setJsonError("Invalid JSON format. Please check your syntax.");
         return;
       }
     }
-    (updated[index] as any)[field] = value;
-    onChange(updated);
+    const publishTimeWithTZ = formData.publishTime ? formData.publishTime + "+06:00" : undefined;
+    const data = {
+      ...formData,
+      publishTime: publishTimeWithTZ,
+      questions: finalQuestions,
+      imageAssignments: imageAssignments.length > 0 ? imageAssignments : undefined,
+      duration: Number(formData.duration) || 60,
+      isVisible: formData.isVisible ?? true,
+      access: formData.access || "all",
+    };
+    onSubmit(data);
   };
-
-  const updateOption = (qIndex: number, oIndex: number, value: string) => {
-    const updated = [...questions];
-    updated[qIndex].options[oIndex] = value;
-    onChange(updated);
-  };
-
-  const removeQuestion = (index: number) => {
-    onChange(questions.filter((_, i) => i !== index));
-  };
-
-  const SECTIONS = ["EngP", "EngO", "AS", "PS"];
 
   return (
-    <div className="space-y-3">
-      {questions.map((q, idx) => (
-        <Card key={idx} className="border-dashed">
-          <CardContent className="pt-3 space-y-2">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">ID: {q.id}</Badge>
-                <Input
-                  type="number"
-                  value={q.id}
-                  onChange={(e) => updateQuestion(idx, "id", Number(e.target.value))}
-                  className="w-20 h-7 text-xs"
-                  data-testid={`input-q-id-${idx}`}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={q.section} onValueChange={(v) => updateQuestion(idx, "section", v)}>
-                  <SelectTrigger className="w-24 h-7 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SECTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Button type="button" size="icon" variant="ghost" onClick={() => removeQuestion(idx)} data-testid={`button-remove-q-${idx}`}>
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
-              </div>
-            </div>
+    <Card className="mb-4">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base">{title}</CardTitle>
+          <Button size="icon" variant="ghost" onClick={onCancel}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label className="text-xs">Title</Label>
+            <Input value={formData.title || ""} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required data-testid="input-mock-title" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Question</Label>
-              <Textarea value={q.question} onChange={(e) => updateQuestion(idx, "question", e.target.value)} rows={2} className="text-xs" />
-            </div>
-            {(q.section === "EngP") && (
-              <div>
-                <Label className="text-xs">Passage (for EngP)</Label>
-                <Textarea value={q.passage || ""} onChange={(e) => updateQuestion(idx, "passage", e.target.value || null)} rows={3} className="text-xs" />
-              </div>
-            )}
-            <ImageUploader
-              label="Question Image"
-              value={q.image || ""}
-              onChange={(url) => updateQuestion(idx, "image", url || null)}
-            />
-            <div className="grid grid-cols-2 gap-2">
-              {q.options.map((opt, oi) => (
-                <div key={oi} className="flex items-center gap-1">
-                  <span className={`text-xs font-bold w-4 ${q.correctAnswer === oi ? "text-green-600" : ""}`}>{String.fromCharCode(65 + oi)}</span>
-                  <Input value={opt} onChange={(e) => updateOption(idx, oi, e.target.value)} className="h-7 text-xs" placeholder={`Option ${String.fromCharCode(65 + oi)}`} />
-                </div>
-              ))}
-            </div>
-            <div>
-              <Label className="text-xs">Correct Answer</Label>
-              <Select value={String(q.correctAnswer)} onValueChange={(v) => updateQuestion(idx, "correctAnswer", Number(v))}>
-                <SelectTrigger className="w-32 h-7 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
+              <Label className="text-xs">Tag</Label>
+              <Select value={formData.tag || ""} onValueChange={(v) => setFormData({ ...formData, tag: v })}>
+                <SelectTrigger data-testid="select-mock-tag"><SelectValue placeholder="Select tag" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">A</SelectItem>
-                  <SelectItem value="1">B</SelectItem>
-                  <SelectItem value="2">C</SelectItem>
-                  <SelectItem value="3">D</SelectItem>
+                  {MOCK_TAGS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
-      ))}
-      <Button type="button" variant="outline" size="sm" onClick={addQuestion} data-testid="button-add-question">
-        <Plus className="h-3.5 w-3.5 mr-1" /> Add Question
-      </Button>
-    </div>
+            <div>
+              <Label className="text-xs">Duration (minutes)</Label>
+              <Input type="number" value={formData.duration ?? 60} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Publish Date & Time (Bangladesh Time)</Label>
+            <Input
+              type="datetime-local"
+              value={formData.publishTime || ""}
+              onChange={(e) => setFormData({ ...formData, publishTime: e.target.value })}
+              required
+              data-testid="input-mock-publish-time"
+            />
+            <p className="text-xs text-muted-foreground mt-0.5">Time is in Bangladesh Standard Time (BST, UTC+6)</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Access</Label>
+              <Select value={formData.access || "all"} onValueChange={(v) => setFormData({ ...formData, access: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ACCESS_LEVELS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2 pt-5">
+              <Label className="text-xs">Visible</Label>
+              <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs mb-2 block">Questions (JSON)</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Format: [{`{ "id": 1, "section": "EngP", "question": "...", "image": null, "passage": null, "options": ["A","B","C","D"], "correctAnswer": 0 }`}]
+              <br />Sections: EngP, EngO, AS, PS. correctAnswer: 0=A, 1=B, 2=C, 3=D
+            </p>
+            <Textarea
+              value={questionsJson}
+              onChange={(e) => { setQuestionsJson(e.target.value); setJsonError(""); }}
+              rows={12}
+              className="font-mono text-xs"
+              placeholder="Paste your questions JSON array here..."
+              data-testid="textarea-mock-questions"
+            />
+            {jsonError && <p className="text-xs text-destructive mt-1">{jsonError}</p>}
+          </div>
+
+          <div>
+            <Label className="text-xs mb-2 block">Upload Images for Questions</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Upload an image and assign it to a question ID. The image will replace the question's "image" field when saved.
+            </p>
+            <div className="flex items-end gap-2 flex-wrap">
+              <div className="flex-shrink-0">
+                <Label className="text-xs">Question ID</Label>
+                <Input
+                  type="number"
+                  value={assignId}
+                  onChange={(e) => setAssignId(e.target.value)}
+                  placeholder="e.g. 1"
+                  className="w-24"
+                  data-testid="input-assign-id"
+                />
+              </div>
+              <div className="flex-1 min-w-[200px]">
+                <ImageUploader
+                  label="Image"
+                  value=""
+                  onChange={handleImageUploaded}
+                />
+              </div>
+            </div>
+
+            {imageAssignments.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <Label className="text-xs">Assigned Images:</Label>
+                {imageAssignments.map((a) => (
+                  <div key={a.questionId} className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">Q#{a.questionId}</Badge>
+                    <img src={a.imageUrl} alt={`Q${a.questionId}`} className="w-12 h-9 rounded object-cover" />
+                    <span className="text-xs text-muted-foreground truncate max-w-[180px]">{a.imageUrl}</span>
+                    <Button type="button" size="icon" variant="ghost" onClick={() => removeAssignment(a.questionId)} data-testid={`button-remove-img-${a.questionId}`}>
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={isPending}>
+              {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
+              {initialData ? "Update Mock Test" : "Create Mock Test"}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -569,11 +678,7 @@ function MockTestsTab() {
   const { data: testList, isLoading } = useQuery<MockTest[]>({ queryKey: ["/api/admin/mock-tests"] });
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
-  const [formData, setFormData] = useState<Record<string, any>>({});
-  const [questions, setQuestions] = useState<QuestionItem[]>([]);
-  const [inputMode, setInputMode] = useState<"visual" | "json">("visual");
-  const [questionsJson, setQuestionsJson] = useState("");
-  const [jsonError, setJsonError] = useState("");
+  const [editingTest, setEditingTest] = useState<MockTest | null>(null);
   const deleteMutation = useDeleteMutation("/api/admin/mock-tests", "/api/admin/mock-tests");
 
   const createMutation = useMutation({
@@ -583,9 +688,6 @@ function MockTestsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/mock-tests"] });
       toast({ title: "Mock test created" });
-      setFormData({});
-      setQuestions([]);
-      setQuestionsJson("");
       setIsCreating(false);
     },
     onError: (error: Error) => {
@@ -593,173 +695,52 @@ function MockTestsTab() {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    let finalQuestions: any[] = [];
-    if (inputMode === "json") {
-      if (questionsJson.trim()) {
-        try {
-          finalQuestions = JSON.parse(questionsJson);
-          if (!Array.isArray(finalQuestions)) {
-            setJsonError("Questions must be a JSON array");
-            return;
-          }
-          setJsonError("");
-        } catch {
-          setJsonError("Invalid JSON format. Please check your syntax.");
-          return;
-        }
-      }
-    } else {
-      finalQuestions = questions;
-    }
-    const publishTimeWithTZ = formData.publishTime ? formData.publishTime + "+06:00" : undefined;
-    const data = {
-      ...formData,
-      publishTime: publishTimeWithTZ,
-      questions: finalQuestions,
-      duration: Number(formData.duration) || 60,
-      isVisible: formData.isVisible ?? true,
-      access: formData.access || "all",
-    };
-    createMutation.mutate(data);
-  };
-
-  const syncToJson = () => {
-    setQuestionsJson(JSON.stringify(questions, null, 2));
-    setInputMode("json");
-  };
-
-  const syncToVisual = () => {
-    try {
-      const parsed = JSON.parse(questionsJson);
-      if (Array.isArray(parsed)) {
-        setQuestions(parsed);
-        setInputMode("visual");
-        setJsonError("");
-      }
-    } catch {
-      setJsonError("Fix JSON errors before switching to visual editor");
-    }
-  };
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      await apiRequest("PATCH", `/api/admin/mock-tests/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/mock-tests"] });
+      toast({ title: "Mock test updated" });
+      setEditingTest(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
 
   return (
     <div>
-      {!isCreating ? (
+      {!isCreating && !editingTest ? (
         <Button size="sm" onClick={() => setIsCreating(true)} data-testid="button-create-mock">
           <Plus className="h-3.5 w-3.5 mr-1" /> Create Mock Test
         </Button>
-      ) : (
-        <Card className="mb-4">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-base">Create Mock Test</CardTitle>
-              <Button size="icon" variant="ghost" onClick={() => setIsCreating(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label className="text-xs">Title</Label>
-                <Input value={formData.title || ""} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required data-testid="input-mock-title" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Tag</Label>
-                  <Select value={formData.tag || ""} onValueChange={(v) => setFormData({ ...formData, tag: v })}>
-                    <SelectTrigger data-testid="select-mock-tag"><SelectValue placeholder="Select tag" /></SelectTrigger>
-                    <SelectContent>
-                      {MOCK_TAGS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Duration (minutes)</Label>
-                  <Input type="number" value={formData.duration ?? 60} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs flex items-center gap-1"><Calendar className="h-3 w-3" /> Publish Date & Time (Bangladesh Time)</Label>
-                <Input
-                  type="datetime-local"
-                  value={formData.publishTime || ""}
-                  onChange={(e) => setFormData({ ...formData, publishTime: e.target.value })}
-                  required
-                  data-testid="input-mock-publish-time"
-                />
-                <p className="text-xs text-muted-foreground mt-0.5">Time is in Bangladesh Standard Time (BST, UTC+6)</p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Access</Label>
-                  <Select value={formData.access || "all"} onValueChange={(v) => setFormData({ ...formData, access: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {ACCESS_LEVELS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2 pt-5">
-                  <Label className="text-xs">Visible</Label>
-                  <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                  <Label className="text-xs">Questions ({inputMode === "visual" ? questions.length : "JSON"})</Label>
-                  <div className="flex gap-1">
-                    <Button type="button" variant={inputMode === "visual" ? "default" : "outline"} size="sm" className="h-6 text-xs px-2"
-                      onClick={() => inputMode === "json" ? syncToVisual() : setInputMode("visual")}
-                      data-testid="button-mode-visual">
-                      Visual Editor
-                    </Button>
-                    <Button type="button" variant={inputMode === "json" ? "default" : "outline"} size="sm" className="h-6 text-xs px-2"
-                      onClick={() => inputMode === "visual" ? syncToJson() : setInputMode("json")}
-                      data-testid="button-mode-json">
-                      JSON Editor
-                    </Button>
-                  </div>
-                </div>
-
-                {inputMode === "visual" ? (
-                  <QuestionEditor questions={questions} onChange={setQuestions} />
-                ) : (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Sections: EngP, EngO, AS, PS. correctAnswer: 0=A, 1=B, 2=C, 3=D. Set "image" to a URL or null.
-                    </p>
-                    <Textarea
-                      value={questionsJson}
-                      onChange={(e) => { setQuestionsJson(e.target.value); setJsonError(""); }}
-                      rows={12}
-                      className="font-mono text-xs"
-                      placeholder="Paste your questions JSON here..."
-                      data-testid="textarea-mock-questions"
-                    />
-                    {jsonError && <p className="text-xs text-destructive mt-1">{jsonError}</p>}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <Button type="submit" size="sm" disabled={createMutation.isPending}>
-                  {createMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
-                  Create Mock Test
-                </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+      ) : isCreating ? (
+        <MockTestForm
+          title="Create Mock Test"
+          onSubmit={(data) => createMutation.mutate(data)}
+          isPending={createMutation.isPending}
+          onCancel={() => setIsCreating(false)}
+        />
+      ) : editingTest ? (
+        <MockTestForm
+          title="Edit Mock Test"
+          initialData={editingTest}
+          onSubmit={(data) => updateMutation.mutate({ id: editingTest.id, data })}
+          isPending={updateMutation.isPending}
+          onCancel={() => setEditingTest(null)}
+        />
+      ) : null}
 
       {isLoading ? <Skeleton className="h-48 w-full mt-4" /> : (
         <div className="space-y-2 mt-4">
           {testList?.map((t) => (
-            <MockTestCard key={t.id} test={t} onDelete={() => deleteMutation.mutate(t.id)} />
+            <MockTestCard
+              key={t.id}
+              test={t}
+              onEdit={() => { setEditingTest(t); setIsCreating(false); }}
+              onDelete={() => deleteMutation.mutate(t.id)}
+            />
           ))}
           {(!testList || testList.length === 0) && <p className="text-sm text-muted-foreground mt-4">No mock tests yet.</p>}
         </div>
@@ -768,7 +749,7 @@ function MockTestsTab() {
   );
 }
 
-function MockTestCard({ test, onDelete }: { test: MockTest; onDelete: () => void }) {
+function MockTestCard({ test, onEdit, onDelete }: { test: MockTest; onEdit: () => void; onDelete: () => void }) {
   const questions = Array.isArray(test.questions) ? test.questions : [];
   return (
     <Card data-testid={`card-mock-${test.id}`}>
@@ -790,6 +771,14 @@ function MockTestCard({ test, onDelete }: { test: MockTest; onDelete: () => void
             <Badge variant={test.isVisible ? "default" : "outline"}>
               {test.isVisible ? "Visible" : "Hidden"}
             </Badge>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onEdit}
+              data-testid={`button-edit-mock-${test.id}`}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
             <Button
               size="icon"
               variant="ghost"
