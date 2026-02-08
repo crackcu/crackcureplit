@@ -1,0 +1,164 @@
+
+
+pages: Home, Courses, Mock Tests, Classes, Resources, Notices, Contact, Sign in/up or profile
+Admin Dashboard, Mentor Dashboard, Student Dashboard.
+
+header:
+left: logo and name. right aligned nav
+for mobile or smaller devive: logo in left, right: profile icon and hamburger. 
+
+footer:
+left: logo, name, short describtion
+middle-right: Quick links: Courses, Video Classes, Study Materials, Notices, profile
+Right: Contact us (One line icons of socials) under it: phone number, email, location
+bottom: copyright.
+
+Home page:
+hero section where i can showcase our running courses (kind of adverstment) or banner photo or colors (if photo missing) {admin & moderator add, remove, edit or hide}
+Courses section: carousel type cards to showcase courses. 
+Mock Tests section: 3 cards of latest 3 mock tests from mock test page
+Classes section: 3 crads of classes. (each card holds last class of each tags)
+same for Resources, Notices section
+
+**Each section will have more (courses/mocks/notices/classes) button
+
+Courses Page:
+showcase courses cards added by admin or moderator. (lates first order)
+Cards: banner image, Title, description, Last Date, price/free,offer pricing  2 option (More & Enroll)
+
+
+Mock Tests Page:
+5 filter button: all, CU Mock, English, Analytical Skill, Problem Solving
+showcase courses cards added by admin, moderator or mentor. (lates first order)
+Cards: Title, date, description, Subject tag (CU Mock, English, Analytical Skill, Problem Solving) and tag (free/paid), button of start  exam (before scheduled time shows timer, scheduled arrives and button changed to start exam wihout refreashing). (none can access without signing in, else if free mock can access, if paid only for paid students)
+
+Classes Page:
+4 filter button: all, English, Analytical Skill, Problem Solving
+showcase courses cards added by admin, moderator or mentor. (lates first order)
+Cards: Thambnail, Title (Auto bring from URL), date, description, Subject tag (English, Analytical Skill, Problem Solving) and tag (free/paid) button of start exam. ( if free anyone(with sign in or without) can access, if paid only for paid students)
+{classes url will be encrypted, none can access from frontend}
+
+Resources Page:
+5 filter button: all, CU QB, English, Analytical Skill, Problem Solving
+showcase courses cards added by admin, moderator or mentor. (lates first order)
+Cards: Title, Date, description, Subject tag (CU QB, English, Analytical Skill, Problem Solving) and tag (free/paid) button of Download pdf or link. (if free anyone(with sign in or without) can access, if paid only for paid students)
+{Resources url/file will be encrypted, none can access from frontend}
+
+Notice page:
+3 filter button: all, CU, Crack-cu
+showcase notices cards added by admin and moderator. (lates first order)
+Cards: Title, date, description (read more option to pop up and full describtion), Subject tag (CU, Crack-CU) and tag (free/paid) button of start exam. accessable for all.
+
+Contact Page: 
+Team Section: 
+Cards: Circuler profile photo, Name, Post, More (button: Pop up and shows describtion and socail links for contact)
+Contact Section:
+Cards of all socials with logos.
+
+Sign up page:
+information collect:
+Personal info:
+Full Name: (In english), 
+Whatsapp no: "+88"(Fixed and un editable) + "11 digit number field-only number",
+Email: 
+HSC Info:
+HSC Roll No: (6 digit field-only number), HSC Registration No: (10 digit field-only number),
+HSC Year: Select: 2027, 2026 or 2025 {admin can change the years}, HSC Group: Radio button = Business Studies, Science, Huminaties
+HSC Board: Select: Bangladesh education boards
+SSC Info: (check box same as HSC) {if ticked= SSC Registration: Filled with HSC Registration, SSC board: Filled with HSC Board, SSC Group: HSC group, SSC year: HSC year-2 (can be edit)}
+SSC Roll No: (6 digit field-only number), SSC Registration No: (10 digit field-only number),
+SSC Year: Select: 2027, 2026 or 2025 {admin can change the years}, HSC Group: Radio button = Business Studies, Science, Huminaties
+SSC Board: Select: Bangladesh education boards
+
+Password:
+Confrim Password:
+
+Register Button. {clicked shows pop-up of showing username and ok button: copy the username to clipboard}
+when registered auto login and redirect to student profile (Dashboard).
+{after Registration compleation send email, SMTP Post Email: crack.info@gmail.com, app password: nuon lxjf ntvm ylin }
+{
+"Hello **{Full Name}**,
+Your registration on **Crack-CU** is complete.
+Here are your account details:
+
+**Username:** **{Username}**
+Please save this information for future access.
+
+If you face any issues, contact us via WhatsApp.
+Whatsapp: +8801522132809
+
+We’re ready when you are.
+
+Regards,
+**Crack-CU Team**
+Don't Just Study, Crack It!.
+}
+
+login Page: 
+2 option login using user id, or WhatsApp no.
+
+Using user id:
+Username: {trim extra spaces}
+Password: field {trim extra spaces}
+Login button : login and redirect to student profile (Dashboard)
+
+Whatsapp no:
+Whatsapp no: {Fixed & un editable "+88" + 11 digit phone number, trim extra spaces}
+Password: field {trim extra spaces}
+Login button : login and redirect to student profile (Dashboard)
+
+
+Student profile or Dashboard:
+taged with free tier student or premium member. (if premium must be gold plated design)
+for free tier student add button like : be premium
+{Red the student profile if he is taged restricted by admin, moderator or mentor. add contact button for remove restriction, they can only access the contect which doesn't required login, and pop up "you're restricted, contact us" for accessing attempt}
+
+
+unsubmitted started mocks list
+past mocks list with results button of review= mock with student selected answer and correct answer.
+They can see and edit their profile informations (except Whatsapp number{if anyone want popup "for number change contact us and contact button=contact page, contact section})
+
+Mentor Dashboard: 
+list of mocks, classes, resources
+and add, edit, remove and hide feature
+in mocks list can see students list who submitted the exam (serial, Username, WhatsApp no, total, Subject wise mark, pass/fail) (add filter to this) (search option)
+can see registered student list (serial, Username, WhatsApp no)(search option)
+
+moderator Dashboard:
+list of home (hero), courses, mocks, classes, resources, notices
+and add, edit, remove and hide feature
+in mocks list can see students list who submitted the exam (serial, Username, WhatsApp no, total, Subject wise mark, pass/fail) (add filter to this) (search option)
+can see registered student list (serial, Username, WhatsApp no)(search option) 
+
+
+Admin Dashboard: (full control)
+list of home, courses, mocks, classes, resources, notices, contact (team), registration form hsc year modifing
+and add, edit, remove and hide feature
+in mocks list can see students list who submitted the exam (serial, Username, WhatsApp no, total, Subject wise mark, pass/fail) (add filter to this) (search option)
+can see registered student list (serial and all information of student)(search option)(can restrict student, convert to paid/unpaid). add, remove, edit student informations, reset passwords
+
+
+
+content adding form:
+all necessary information field, Access (All, Sign in, paid) selection, date (if given then add, other wise adding date), images and all needed field.
+
+Mock Test input will be JSON and other information of mock will be given later.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

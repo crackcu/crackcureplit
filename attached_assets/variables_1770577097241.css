@@ -1,0 +1,30 @@
+/* ### 📄 css/variables.css */
+/* ```css */
+:root {
+    /* Colors */
+    --primary-color: #eb202a;
+    --primary-dark: #000000;
+    --secondary-color: #059669;
+    --accent-color: #dc2626;
+    
+    --text-primary: #000206;
+    --text-secondary: #6b7280;
+    --text-light: #9ca3af;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-alt: #f3f4f6;
+
+
+    
+
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+     /* Mock Test */
+    --Selected-color: #f59f0b9f;
+    --Correct-color: #DCFCE7;
+    --Wrong-color: #FEE2E2;
+    
+}

@@ -1,0 +1,92 @@
+No otp system required. User name format: "First letter of HSC Group (B/S/H)"+"Last two digit of hsc year"+"HSC roll"
+
+Mock Test system:
+Scheduled (global publish time, any time accessable after publishing)
+Exam duration: 60 for full mock test, for other it is adjustable
+MCQ Based questions (4 option)
+
+full mock information:
+3 Subjects (Eng, AS, PS) [3 button to auto scroll]
+
+Eng: 2 sections:
+Section1= EngP: 1 passage with 5 MCQs
+Section2= EngO: 30 MCQS
+AS: 15 mcqs 
+PS: 15 MCQS
+
+Subject wise mocks can contain less or more mcqs
+
+Marking
+Eng: EngP: correct=+2, incorrect= -0.5; EngO= correct=+1, incorrect= -0.25; pass mark= 13
+AS: correct=+2, incorrect= -0.5; pass mark= 10
+PS: correct=+2, incorrect= -0.5; pass mark= 10
+
+All over total pass mark= 40
+
+if second timer then total mark -3= net mark
+1st timer hsc years and 2nd timer hsc years will be inputed by admin or moderator
+
+
+Mock input form:
+field: Title, Tag: (CU/english/analytical skill/problem solving), Publishing time, questions (JSON format), image adding & ID input the question to attached with, Accessable option.
+JSON format:
+[
+  {
+    "id": 1,
+    "passage": "This is a test passage.",
+    "section": "EngP",
+    "question": "What is the purpose of this passage?",
+    "image": null, {some mcqs will be attached with image the image will be uploaded by admin/moderator/mentor and attached to the assigned id}
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": 0 {option a=0}
+  },
+  {
+    "id": 2,
+    "passage": "null",
+    "section": "EngO",
+    "question": "What is the purpose of this passage?",
+    "image": null,
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": 2 {option c=2}
+  },
+  {
+    "id": 2,
+    "passage": "null",
+    "section": "AS",
+    "question": "What is the purpose of this passage?",
+    "image": null,
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": 2 {option c=2}
+  },
+  {
+    "id": 3,
+    "passage": "null",
+    "section": "PS",
+    "question": "What is the purpose of this passage?",
+    "image": null,
+    "options": [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    "correctAnswer": 2 {option c=2}
+  },
+]
+
+
