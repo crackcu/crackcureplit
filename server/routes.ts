@@ -254,6 +254,30 @@ export async function registerRoutes(
     res.json(submissions);
   });
 
+  app.get("/api/my-submissions/:submissionId/review", requireAuth, async (req, res) => {
+    try {
+      const submissionId = parseInt(req.params.submissionId);
+      const submissions = await storage.getUserSubmissions(req.session.userId!);
+      const submission = submissions.find(s => s.id === submissionId);
+      if (!submission) return res.status(404).json({ message: "Submission not found" });
+      if (!submission.isSubmitted) return res.status(400).json({ message: "Submission not yet completed" });
+
+      const test = await storage.getMockTest(submission.mockTestId);
+      if (!test) return res.status(404).json({ message: "Mock test not found" });
+
+      res.json({
+        submission,
+        mockTest: {
+          id: test.id,
+          title: test.title,
+          questions: test.questions,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/my-enrollments", requireAuth, async (req, res) => {
     const enrollmentList = await storage.getUserEnrollments(req.session.userId!);
     res.json(enrollmentList);

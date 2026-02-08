@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
-import { Clock, ChevronLeft, ChevronRight, Send, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { Clock, Send, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import type { MockTest, MockSubmission } from "@shared/schema";
 import { Link } from "wouter";
 
@@ -23,19 +23,26 @@ interface Question {
   correctAnswer: number;
 }
 
-const SECTION_LABELS: Record<string, string> = {
-  EngP: "English Passage",
-  EngO: "English Other",
-  AS: "Analytical Skill",
-  PS: "Problem Solving",
-};
-
 const SECTION_COLORS: Record<string, string> = {
   EngP: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   EngO: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   AS: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
   PS: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
 };
+
+function renderHtml(text: string) {
+  const sanitized = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/&lt;b&gt;/gi, "<b>")
+    .replace(/&lt;\/b&gt;/gi, "</b>")
+    .replace(/&lt;u&gt;/gi, "<u>")
+    .replace(/&lt;\/u&gt;/gi, "</u>")
+    .replace(/&lt;i&gt;/gi, "<i>")
+    .replace(/&lt;\/i&gt;/gi, "</i>");
+  return sanitized;
+}
 
 export default function MockExamPage() {
   const [, params] = useRoute("/mock-tests/:id");
@@ -44,7 +51,6 @@ export default function MockExamPage() {
   const { toast } = useToast();
 
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<MockSubmission | null>(null);
@@ -184,11 +190,10 @@ export default function MockExamPage() {
     );
   }
 
-  const currentQ = questions[currentIndex];
   const answeredCount = Object.keys(answers).length;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-4" data-testid="page-mock-exam">
+    <div className="max-w-3xl mx-auto px-4 py-4" data-testid="page-mock-exam">
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur pb-3 border-b mb-4">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="min-w-0">
@@ -211,25 +216,6 @@ export default function MockExamPage() {
               <Send className="h-3.5 w-3.5 mr-1" /> Submit
             </Button>
           </div>
-        </div>
-
-        <div className="flex flex-wrap gap-1 mt-2">
-          {questions.map((q, i) => (
-            <button
-              key={q.id}
-              className={`w-7 h-7 text-xs rounded-md border transition-colors ${
-                i === currentIndex
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : answers[String(q.id)] !== undefined
-                  ? "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700"
-                  : "bg-muted border-border"
-              }`}
-              onClick={() => setCurrentIndex(i)}
-              data-testid={`button-q-nav-${i}`}
-            >
-              {i + 1}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -254,90 +240,88 @@ export default function MockExamPage() {
         </div>
       )}
 
-      {currentQ && (
-        <motion.div key={currentIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2 }}>
-          <Card data-testid="card-question">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-muted-foreground">Q{currentIndex + 1}</span>
-                  <Badge className={SECTION_COLORS[currentQ.section] || ""}>
-                    {SECTION_LABELS[currentQ.section] || currentQ.section}
-                  </Badge>
-                </div>
-                <span className="text-xs text-muted-foreground">ID: {currentQ.id}</span>
+      <div className="space-y-4">
+        {questions.map((q, idx) => (
+          <Card key={q.id} data-testid={`card-question-${q.id}`}>
+            <CardContent className="pt-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-muted-foreground">Q{idx + 1}.</span>
+                <Badge className={SECTION_COLORS[q.section] || ""}>
+                  {q.section}
+                </Badge>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {currentQ.passage && (
-                <div className="bg-muted p-3 rounded-md text-sm leading-relaxed" data-testid="text-passage">
-                  {currentQ.passage}
-                </div>
+
+              {q.passage && (
+                <div
+                  className="bg-muted p-3 rounded-md text-sm leading-relaxed"
+                  data-testid={`text-passage-${q.id}`}
+                  dangerouslySetInnerHTML={{ __html: renderHtml(q.passage) }}
+                />
               )}
 
-              {currentQ.image && (
-                <img src={currentQ.image} alt="Question" className="max-w-full rounded-md max-h-64 object-contain" data-testid="img-question" />
+              {q.image && (
+                <img src={q.image} alt="Question" className="max-w-full rounded-md max-h-64 object-contain" data-testid={`img-question-${q.id}`} />
               )}
 
-              <p className="text-sm font-medium" data-testid="text-question">{currentQ.question}</p>
+              <p
+                className="text-sm font-medium"
+                data-testid={`text-question-${q.id}`}
+                dangerouslySetInnerHTML={{ __html: renderHtml(q.question) }}
+              />
 
               <div className="space-y-2">
-                {currentQ.options.map((opt, oi) => {
-                  const selected = answers[String(currentQ.id)] === oi;
+                {q.options.map((opt, oi) => {
+                  const selected = answers[String(q.id)] === oi;
                   return (
                     <button
                       key={oi}
                       className={`w-full text-left p-3 rounded-md border transition-colors flex items-center gap-3 ${
                         selected
-                          ? "bg-primary/10 border-primary"
+                          ? "bg-blue-50 dark:bg-blue-950 border-blue-400 dark:border-blue-600"
                           : "hover:bg-muted border-border"
                       }`}
                       onClick={() => {
                         const newAnswers = { ...answers };
-                        if (newAnswers[String(currentQ.id)] === oi) {
-                          delete newAnswers[String(currentQ.id)];
+                        if (newAnswers[String(q.id)] === oi) {
+                          delete newAnswers[String(q.id)];
                         } else {
-                          newAnswers[String(currentQ.id)] = oi;
+                          newAnswers[String(q.id)] = oi;
                         }
                         setAnswers(newAnswers);
                       }}
-                      data-testid={`button-option-${oi}`}
+                      data-testid={`button-option-${q.id}-${oi}`}
                     >
                       <span className={`w-7 h-7 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${
-                        selected ? "bg-primary text-primary-foreground border-primary" : "border-border"
+                        selected ? "bg-blue-500 text-white border-blue-500" : "border-border"
                       }`}>
                         {String.fromCharCode(65 + oi)}
                       </span>
-                      <span className="text-sm">{opt}</span>
+                      <span
+                        className="text-sm"
+                        dangerouslySetInnerHTML={{ __html: renderHtml(opt) }}
+                      />
                     </button>
                   );
                 })}
               </div>
-
-              <div className="flex items-center justify-between pt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentIndex === 0}
-                  onClick={() => setCurrentIndex(currentIndex - 1)}
-                  data-testid="button-prev"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentIndex === questions.length - 1}
-                  onClick={() => setCurrentIndex(currentIndex + 1)}
-                  data-testid="button-next"
-                >
-                  Next <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
             </CardContent>
           </Card>
-        </motion.div>
-      )}
+        ))}
+      </div>
+
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur pt-3 border-t mt-4 pb-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">{answeredCount}/{questions.length} answered</p>
+          <Button
+            size="sm"
+            onClick={() => setShowConfirm(true)}
+            disabled={submitMutation.isPending}
+            data-testid="button-submit-exam-bottom"
+          >
+            {submitMutation.isPending ? "Submitting..." : "Submit Exam"}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

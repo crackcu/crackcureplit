@@ -492,22 +492,47 @@ function MockTestForm({
   const [jsonError, setJsonError] = useState("");
   const [imageAssignments, setImageAssignments] = useState<ImageAssignment[]>([]);
   const [assignId, setAssignId] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-  const handleImageUploaded = (url: string) => {
-    if (!url) return;
+  const handleFileUpload = async (file: File) => {
     const idNum = parseInt(assignId);
     if (!assignId || isNaN(idNum)) {
       toast({ title: "Enter a question ID first", variant: "destructive" });
       return;
     }
-    const existing = imageAssignments.find(a => a.questionId === idNum);
-    if (existing) {
-      setImageAssignments(imageAssignments.map(a => a.questionId === idNum ? { ...a, imageUrl: url } : a));
-    } else {
-      setImageAssignments([...imageAssignments, { questionId: idNum, imageUrl: url }]);
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Please select an image file", variant: "destructive" });
+      return;
     }
-    setAssignId("");
-    toast({ title: `Image assigned to question #${idNum}` });
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "File too large (max 10MB)", variant: "destructive" });
+      return;
+    }
+    setUploading(true);
+    try {
+      const res = await fetch("/api/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      if (!res.ok) throw new Error("Failed to get upload URL");
+      const { uploadURL, objectPath } = await res.json();
+      const putRes = await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+      if (!putRes.ok) throw new Error("Upload failed");
+
+      const existing = imageAssignments.find(a => a.questionId === idNum);
+      if (existing) {
+        setImageAssignments(imageAssignments.map(a => a.questionId === idNum ? { ...a, imageUrl: objectPath } : a));
+      } else {
+        setImageAssignments([...imageAssignments, { questionId: idNum, imageUrl: objectPath }]);
+      }
+      setAssignId("");
+      toast({ title: `Image assigned to question #${idNum}` });
+    } catch (err: any) {
+      toast({ title: err.message || "Upload failed", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const removeAssignment = (qId: number) => {
@@ -635,12 +660,23 @@ function MockTestForm({
                   data-testid="input-assign-id"
                 />
               </div>
-              <div className="flex-1 min-w-[200px]">
-                <ImageUploader
-                  label="Image"
-                  value=""
-                  onChange={handleImageUploaded}
-                />
+              <div>
+                <Label className="text-xs">Upload</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file);
+                      e.target.value = "";
+                    }}
+                    className="text-xs"
+                    data-testid="input-upload-question-img"
+                  />
+                  {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                </div>
               </div>
             </div>
 

@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { BookOpen, FileText, Play, Calendar, User, Award, Clock } from "lucide-react";
+import { BookOpen, FileText, Play, Calendar, User, Award, Clock, Eye } from "lucide-react";
 import { format } from "date-fns";
 import type { MockSubmission, Course, Enrollment } from "@shared/schema";
 
@@ -109,7 +109,7 @@ function RecentSubmissions({ userId }: { userId: number }) {
           </div>
         ) : submissions && submissions.length > 0 ? (
           <div className="space-y-3">
-            {submissions.slice(0, 5).map((sub) => (
+            {submissions.slice(0, 10).map((sub) => (
               <div key={sub.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50" data-testid={`submission-${sub.id}`}>
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -120,11 +120,18 @@ function RecentSubmissions({ userId }: { userId: number }) {
                     </p>
                   </div>
                 </div>
-                <div className="text-right shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   {sub.isSubmitted ? (
-                    <Badge variant={sub.passed ? "default" : "destructive"} className={sub.passed ? "bg-green-600" : ""}>
-                      {sub.netMarks?.toFixed(1)}
-                    </Badge>
+                    <>
+                      <Badge variant={sub.passed ? "default" : "destructive"} className={sub.passed ? "bg-green-600" : ""}>
+                        {sub.netMarks?.toFixed(1)}
+                      </Badge>
+                      <Link href={`/mock-review/${sub.id}`}>
+                        <Button size="sm" variant="outline" data-testid={`button-review-${sub.id}`}>
+                          <Eye className="h-3.5 w-3.5 mr-1" /> Review
+                        </Button>
+                      </Link>
+                    </>
                   ) : (
                     <Badge variant="outline">Ongoing</Badge>
                   )}
