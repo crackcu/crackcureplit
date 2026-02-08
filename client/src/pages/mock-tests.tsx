@@ -130,6 +130,10 @@ export default function MockTestsPage() {
                       <Link href="/auth">
                         <Button size="sm">Sign in to Start</Button>
                       </Link>
+                    ) : test.access === "paid" && !user?.isPremium ? (
+                      <Button size="sm" variant="outline" disabled data-testid={`button-premium-${test.id}`}>
+                        Premium Only
+                      </Button>
                     ) : (
                       <Link href={`/mock-tests/${test.id}`}>
                         <Button size="sm" data-testid={`button-start-${test.id}`}>

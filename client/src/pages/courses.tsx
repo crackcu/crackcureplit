@@ -8,11 +8,13 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { BookOpen, Calendar, Image as ImageIcon } from "lucide-react";
 import type { Course } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function CoursesPage() {
   const { data: courses, isLoading } = useQuery<Course[]>({
     queryKey: ["/api/courses"],
   });
+  const { user } = useAuth();
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8" data-testid="page-courses">
@@ -31,7 +33,7 @@ export default function CoursesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i}>
-              <Skeleton className="h-44 w-full rounded-t-xl rounded-b-none" />
+              <Skeleton className="aspect-video w-full rounded-t-xl rounded-b-none" />
               <CardContent className="pt-4">
                 <Skeleton className="h-5 w-3/4 mb-2" />
                 <Skeleton className="h-4 w-full mb-1" />
@@ -50,7 +52,7 @@ export default function CoursesPage() {
               transition={{ duration: 0.3, delay: idx * 0.05 }}
             >
               <Card className="overflow-visible flex flex-col h-full" data-testid={`card-course-${course.id}`}>
-                <div className="relative h-44 bg-muted rounded-t-xl flex items-center justify-center">
+                <div className="relative aspect-video bg-muted rounded-t-xl flex items-center justify-center">
                   {course.bannerImage ? (
                     <img
                       src={course.bannerImage}
@@ -97,9 +99,15 @@ export default function CoursesPage() {
                     <BookOpen className="h-3.5 w-3.5 mr-1" />
                     More
                   </Button>
-                  <Button size="sm" data-testid={`button-course-enroll-${course.id}`}>
-                    Enroll
-                  </Button>
+                  {course.access === "paid" && !user?.isPremium ? (
+                    <Button size="sm" variant="outline" disabled data-testid={`button-course-premium-${course.id}`}>
+                      Premium Only
+                    </Button>
+                  ) : (
+                    <Button size="sm" data-testid={`button-course-enroll-${course.id}`}>
+                      Enroll
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             </motion.div>

@@ -245,6 +245,12 @@ export async function registerRoutes(
       if (publishDate.getTime() > Date.now()) {
         return res.status(403).json({ message: "This mock test hasn't started yet" });
       }
+      if (test.access === "paid") {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user?.isPremium) {
+          return res.status(403).json({ message: "This is a premium mock test. Upgrade to access it." });
+        }
+      }
       res.json(test);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -281,6 +287,35 @@ export async function registerRoutes(
           questions: test.questions,
         },
       });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/profile", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { fullName, email, hscRoll, hscReg, hscGroup, hscBoard, sscRoll, sscReg, sscGroup, sscBoard } = req.body;
+      const updateData: any = {};
+      if (fullName !== undefined) updateData.fullName = fullName;
+      if (email !== undefined) updateData.email = email;
+      if (hscRoll !== undefined) updateData.hscRoll = hscRoll;
+      if (hscReg !== undefined) updateData.hscReg = hscReg;
+      if (hscGroup !== undefined) updateData.hscGroup = hscGroup;
+      if (hscBoard !== undefined) updateData.hscBoard = hscBoard;
+      if (sscRoll !== undefined) updateData.sscRoll = sscRoll;
+      if (sscReg !== undefined) updateData.sscReg = sscReg;
+      if (sscGroup !== undefined) updateData.sscGroup = sscGroup;
+      if (sscBoard !== undefined) updateData.sscBoard = sscBoard;
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: "No fields to update" });
+      }
+
+      const updated = await storage.updateUser(userId, updateData);
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      const { password: _, ...safeUser } = updated;
+      res.json(safeUser);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -331,6 +366,9 @@ export async function registerRoutes(
         }
       }
 
+      const submittingUser = await storage.getUser(userId);
+      const isSecondTimer = submittingUser?.isSecondTimer ?? false;
+
       const existingSubs = await storage.getUserSubmissions(userId);
       const prevSubmissions = existingSubs.filter(s => s.mockTestId === mockTestId && s.isSubmitted);
       const attemptNumber = prevSubmissions.length + 1;
@@ -341,7 +379,7 @@ export async function registerRoutes(
       // AS: +2 correct, -0.5 wrong, pass 10
       // PS: +2 correct, -0.5 wrong, pass 10
       // Overall pass: 40
-      // 2nd attempt penalty: -3
+      // 2nd timer penalty: -3 (based on user's isSecondTimer flag)
 
       const markingRules: Record<string, { correct: number; wrong: number; pass: number }> = {
         EngP: { correct: 2, wrong: -0.5, pass: 13 },
@@ -374,7 +412,7 @@ export async function registerRoutes(
       let totalMarks = engPMarks + engOMarks + asMarks + psMarks;
       let netMarks = totalMarks;
 
-      if (attemptNumber >= 2) {
+      if (isSecondTimer) {
         netMarks -= 3;
       }
 
@@ -420,11 +458,11 @@ export async function registerRoutes(
                   <tr style="background: #f3f4f6;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Analytical Skill (AS)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${asMarks.toFixed(2)} ${passedAS ? "(Pass)" : "(Fail, need 10)"}</td></tr>
                   <tr><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Problem Solving (PS)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${psMarks.toFixed(2)} ${passedPS ? "(Pass)" : "(Fail, need 10)"}</td></tr>
                   <tr style="background: #f3f4f6;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Total Marks</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${totalMarks.toFixed(2)}</td></tr>
-                  ${attemptNumber >= 2 ? `<tr><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Attempt Penalty</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">-3</td></tr>` : ""}
+                  ${isSecondTimer ? `<tr><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>2nd Timer Penalty</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">-3</td></tr>` : ""}
                   <tr style="background: #1f2937; color: white;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Net Marks</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${netMarks.toFixed(2)}</td></tr>
                 </table>
                 <p style="font-size: 18px; font-weight: bold; color: ${statusColor};">Status: ${statusText}</p>
-                <p style="color: #6b7280; font-size: 14px;">Attempt #${attemptNumber} | Submitted at: ${formatBDTime(new Date())} (BST)</p>
+                <p style="color: #6b7280; font-size: 14px;">${isSecondTimer ? "2nd Timer" : "1st Timer"} | Attempt #${attemptNumber} | Submitted at: ${formatBDTime(new Date())} (BST)</p>
                 <hr style="margin: 20px 0;" />
                 <p style="color: #6b7280; font-size: 12px;">Don't Just Study, Crack It! - Crack-CU</p>
               </div>
@@ -457,13 +495,54 @@ export async function registerRoutes(
   app.patch("/api/admin/users/:id", requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { role, isPremium, isRestricted } = req.body;
+      const { role, isPremium, isRestricted, isSecondTimer, hscYear, sscYear } = req.body;
       const updateData: any = {};
       if (role !== undefined) updateData.role = role;
       if (isPremium !== undefined) updateData.isPremium = isPremium;
       if (isRestricted !== undefined) updateData.isRestricted = isRestricted;
+      if (isSecondTimer !== undefined) updateData.isSecondTimer = isSecondTimer;
+      if (hscYear !== undefined) updateData.hscYear = hscYear;
+      if (sscYear !== undefined) updateData.sscYear = sscYear;
+
+      const previousUser = await storage.getUser(id);
       const updated = await storage.updateUser(id, updateData);
       if (!updated) return res.status(404).json({ message: "User not found" });
+
+      if (isPremium === true && previousUser && !previousUser.isPremium) {
+        try {
+          await transporter.sendMail({
+            from: `"Crack-CU" <${process.env.SMTP_USER}>`,
+            to: updated.email,
+            subject: "Congratulations! You're Now a Premium Member - Crack-CU",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #eb202a, #c41820); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+                  <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to Premium!</h1>
+                </div>
+                <div style="padding: 24px; background: #ffffff; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+                  <p style="font-size: 16px;">Hi <strong>${updated.fullName}</strong>,</p>
+                  <p>Congratulations! Your account has been upgraded to <strong style="color: #eb202a;">Premium</strong>.</p>
+                  <p>You now have access to:</p>
+                  <ul style="padding-left: 20px; line-height: 1.8;">
+                    <li>All premium mock tests</li>
+                    <li>Exclusive study resources</li>
+                    <li>Premium video classes</li>
+                    <li>Premium courses</li>
+                  </ul>
+                  <p style="margin-top: 20px; padding: 12px; background: #fef3c7; border-radius: 6px; text-align: center; font-weight: bold; color: #92400e;">
+                    Don't Just Study, Crack It!
+                  </p>
+                  <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;" />
+                  <p style="color: #6b7280; font-size: 12px; text-align: center;">Crack-CU - Chittagong University Admission Prep</p>
+                </div>
+              </div>
+            `,
+          });
+        } catch (emailErr) {
+          console.error("Failed to send premium email:", emailErr);
+        }
+      }
+
       const { password: _, ...safeUser } = updated;
       res.json(safeUser);
     } catch (error: any) {

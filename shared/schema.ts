@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("student"),
   isPremium: boolean("is_premium").notNull().default(false),
   isRestricted: boolean("is_restricted").notNull().default(false),
+  isSecondTimer: boolean("is_second_timer").notNull().default(false),
   hscRoll: text("hsc_roll").notNull(),
   hscReg: text("hsc_reg").notNull(),
   hscYear: text("hsc_year").notNull(),

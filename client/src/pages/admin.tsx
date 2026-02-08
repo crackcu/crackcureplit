@@ -153,6 +153,26 @@ function UsersTab() {
     },
   });
 
+  const toggleSecondTimer = useMutation({
+    mutationFn: async ({ userId, isSecondTimer }: { userId: number; isSecondTimer: boolean }) => {
+      await apiRequest("PATCH", `/api/admin/users/${userId}`, { isSecondTimer });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Timer status updated" });
+    },
+  });
+
+  const updateYear = useMutation({
+    mutationFn: async ({ userId, field, value }: { userId: number; field: string; value: string }) => {
+      await apiRequest("PATCH", `/api/admin/users/${userId}`, { [field]: value });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "Year updated" });
+    },
+  });
+
   if (isLoading) return <Skeleton className="h-48 w-full" />;
 
   const filtered = allUsers?.filter((u) => {
@@ -181,6 +201,7 @@ function UsersTab() {
                   <Badge variant="secondary" className="text-xs">{u.role}</Badge>
                   {u.isPremium && <Badge className="bg-success text-success-foreground text-xs">Premium</Badge>}
                   {u.isRestricted && <Badge variant="destructive" className="text-xs">Restricted</Badge>}
+                  {(u as any).isSecondTimer && <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 dark:text-amber-400">2nd Timer</Badge>}
                 </div>
                 <p className="text-xs text-muted-foreground">@{u.username} | {u.email} | {u.whatsapp}</p>
               </div>
@@ -214,66 +235,104 @@ function UsersTab() {
             </div>
 
             {expandedUser === u.id && (
-              <div className="mt-4 pt-4 border-t grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                <div>
-                  <p className="text-xs text-muted-foreground">Full Name</p>
-                  <p className="font-medium">{u.fullName}</p>
+              <div className="mt-4 pt-4 border-t space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Full Name</p>
+                    <p className="font-medium">{u.fullName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="font-medium">{u.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">WhatsApp</p>
+                    <p className="font-medium">{u.whatsapp}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Username</p>
+                    <p className="font-medium font-mono">{u.username}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">HSC Roll</p>
+                    <p className="font-medium">{u.hscRoll}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">HSC Reg</p>
+                    <p className="font-medium">{u.hscReg}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">HSC Group</p>
+                    <p className="font-medium">{u.hscGroup}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">HSC Board</p>
+                    <p className="font-medium">{u.hscBoard}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">SSC Roll</p>
+                    <p className="font-medium">{u.sscRoll}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">SSC Reg</p>
+                    <p className="font-medium">{u.sscReg}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">SSC Group</p>
+                    <p className="font-medium">{u.sscGroup}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">SSC Board</p>
+                    <p className="font-medium">{u.sscBoard}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Registered</p>
+                    <p className="font-medium">{u.createdAt ? format(new Date(u.createdAt), "PPp") : "N/A"}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="font-medium">{u.email}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">WhatsApp</p>
-                  <p className="font-medium">{u.whatsapp}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Username</p>
-                  <p className="font-medium font-mono">{u.username}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">HSC Roll</p>
-                  <p className="font-medium">{u.hscRoll}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">HSC Reg</p>
-                  <p className="font-medium">{u.hscReg}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">HSC Year</p>
-                  <p className="font-medium">{u.hscYear}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">HSC Group</p>
-                  <p className="font-medium">{u.hscGroup}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">HSC Board</p>
-                  <p className="font-medium">{u.hscBoard}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">SSC Roll</p>
-                  <p className="font-medium">{u.sscRoll}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">SSC Reg</p>
-                  <p className="font-medium">{u.sscReg}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">SSC Year</p>
-                  <p className="font-medium">{u.sscYear}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">SSC Group</p>
-                  <p className="font-medium">{u.sscGroup}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">SSC Board</p>
-                  <p className="font-medium">{u.sscBoard}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Registered</p>
-                  <p className="font-medium">{u.createdAt ? format(new Date(u.createdAt), "PPp") : "N/A"}</p>
+                <div className="pt-3 border-t">
+                  <p className="text-xs font-medium text-muted-foreground mb-3">Admin Controls</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <Label className="text-xs">HSC Year</Label>
+                      <Input
+                        defaultValue={u.hscYear}
+                        className="mt-1"
+                        onBlur={(e) => {
+                          if (e.target.value && e.target.value !== u.hscYear)
+                            updateYear.mutate({ userId: u.id, field: "hscYear", value: e.target.value });
+                        }}
+                        data-testid={`input-hsc-year-${u.id}`}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">SSC Year</Label>
+                      <Input
+                        defaultValue={u.sscYear}
+                        className="mt-1"
+                        onBlur={(e) => {
+                          if (e.target.value && e.target.value !== u.sscYear)
+                            updateYear.mutate({ userId: u.id, field: "sscYear", value: e.target.value });
+                        }}
+                        data-testid={`input-ssc-year-${u.id}`}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Attempt Status</Label>
+                      <Select
+                        value={(u as any).isSecondTimer ? "2nd" : "1st"}
+                        onValueChange={(v) => toggleSecondTimer.mutate({ userId: u.id, isSecondTimer: v === "2nd" })}
+                      >
+                        <SelectTrigger className="mt-1" data-testid={`select-timer-${u.id}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1st">1st Timer</SelectItem>
+                          <SelectItem value="2nd">2nd Timer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

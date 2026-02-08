@@ -171,7 +171,15 @@ export default function MockExamPage() {
 
               <div className="text-center space-y-1 pt-2">
                 <p className="text-sm text-muted-foreground">Total: <strong>{(result.totalMarks ?? 0).toFixed(2)}</strong></p>
+                {user?.isSecondTimer && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400">2nd Timer Penalty: <strong>-3</strong></p>
+                )}
                 <p className="text-lg font-bold">Net Marks: <span className={result.passed ? "text-green-600" : "text-destructive"}>{(result.netMarks ?? 0).toFixed(2)}</span></p>
+                <div className="flex items-center justify-center gap-2">
+                  <Badge variant="outline" className={user?.isSecondTimer ? "border-amber-500 text-amber-600 dark:text-amber-400" : ""} data-testid="badge-timer-status">
+                    {user?.isSecondTimer ? "2nd Timer" : "1st Timer"}
+                  </Badge>
+                </div>
                 <p className="text-xs text-muted-foreground">(Pass mark: 40 overall, EngP 13, AS 10, PS 10)</p>
               </div>
 

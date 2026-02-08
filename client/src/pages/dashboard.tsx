@@ -1,15 +1,22 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import { BookOpen, FileText, Play, Calendar, User, Award, Clock, Eye, Crown } from "lucide-react";
+import { BookOpen, FileText, Play, Calendar, User, Award, Clock, Eye, Crown, Pencil, X, Save } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { MockSubmission, Course, Enrollment } from "@shared/schema";
+import { BANGLADESH_BOARDS, HSC_GROUPS } from "@shared/schema";
 
 type SubmissionWithTitle = MockSubmission & { mockTestTitle?: string };
 
@@ -51,6 +58,9 @@ export default function Dashboard() {
               <Badge variant="outline">Free</Badge>
             )}
             <Badge variant="secondary">{user.role}</Badge>
+            <Badge variant="outline" className={user.isSecondTimer ? "border-amber-500 text-amber-600 dark:text-amber-400" : ""} data-testid="badge-timer-status">
+              {user.isSecondTimer ? "2nd Timer" : "1st Timer"}
+            </Badge>
           </div>
         </div>
       </motion.div>
@@ -70,37 +80,165 @@ export default function Dashboard() {
 }
 
 function ProfileCard({ user }: { user: any }) {
+  const [editing, setEditing] = useState(false);
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    fullName: user.fullName || "",
+    email: user.email || "",
+    hscRoll: user.hscRoll || "",
+    hscReg: user.hscReg || "",
+    hscGroup: user.hscGroup || "",
+    hscBoard: user.hscBoard || "",
+    sscRoll: user.sscRoll || "",
+    sscReg: user.sscReg || "",
+    sscGroup: user.sscGroup || "",
+    sscBoard: user.sscBoard || "",
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: typeof form) => {
+      const res = await apiRequest("PATCH", "/api/profile", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({ title: "Profile updated successfully" });
+      setEditing(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
+  if (!editing) {
+    return (
+      <Card data-testid="card-profile">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+          <CardTitle className="text-base">Profile Information</CardTitle>
+          <Button size="sm" variant="outline" onClick={() => setEditing(true)} data-testid="button-edit-profile">
+            <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground text-xs">Full Name</p>
+              <p className="font-medium">{user.fullName}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Email</p>
+              <p className="font-medium">{user.email}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">WhatsApp</p>
+              <p className="font-medium">{user.whatsapp}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Only Admin can change. Contact admin.</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Username</p>
+              <p className="font-medium font-mono">{user.username}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">HSC</p>
+              <p className="font-medium">{user.hscGroup} | {user.hscYear} | {user.hscBoard}</p>
+              <p className="text-xs text-muted-foreground">Roll: {user.hscRoll} | Reg: {user.hscReg}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">SSC</p>
+              <p className="font-medium">{user.sscGroup} | {user.sscYear} | {user.sscBoard}</p>
+              <p className="text-xs text-muted-foreground">Roll: {user.sscRoll} | Reg: {user.sscReg}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Card data-testid="card-profile">
-      <CardHeader>
-        <CardTitle className="text-base">Profile Information</CardTitle>
+    <Card data-testid="card-profile-edit">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+        <CardTitle className="text-base">Edit Profile</CardTitle>
+        <Button size="sm" variant="outline" onClick={() => setEditing(false)} data-testid="button-cancel-edit">
+          <X className="h-3.5 w-3.5 mr-1" /> Cancel
+        </Button>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <p className="text-muted-foreground text-xs">Full Name</p>
-            <p className="font-medium">{user.fullName}</p>
+            <Label className="text-xs">Full Name</Label>
+            <Input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} data-testid="input-edit-name" />
           </div>
           <div>
-            <p className="text-muted-foreground text-xs">Email</p>
-            <p className="font-medium">{user.email}</p>
+            <Label className="text-xs">Email</Label>
+            <Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} data-testid="input-edit-email" />
           </div>
           <div>
-            <p className="text-muted-foreground text-xs">WhatsApp</p>
-            <p className="font-medium">{user.whatsapp}</p>
+            <Label className="text-xs">WhatsApp</Label>
+            <Input value={user.whatsapp} disabled className="opacity-60" />
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Only Admin can change. Contact admin.</p>
           </div>
           <div>
-            <p className="text-muted-foreground text-xs">Username</p>
-            <p className="font-medium font-mono">{user.username}</p>
+            <Label className="text-xs">Username</Label>
+            <Input value={user.username} disabled className="opacity-60 font-mono" />
           </div>
           <div>
-            <p className="text-muted-foreground text-xs">HSC</p>
-            <p className="font-medium">{user.hscGroup} | {user.hscYear} | {user.hscBoard}</p>
+            <Label className="text-xs">HSC Roll</Label>
+            <Input value={form.hscRoll} onChange={(e) => setForm({ ...form, hscRoll: e.target.value })} data-testid="input-edit-hsc-roll" />
           </div>
           <div>
-            <p className="text-muted-foreground text-xs">SSC</p>
-            <p className="font-medium">{user.sscGroup} | {user.sscYear} | {user.sscBoard}</p>
+            <Label className="text-xs">HSC Reg</Label>
+            <Input value={form.hscReg} onChange={(e) => setForm({ ...form, hscReg: e.target.value })} data-testid="input-edit-hsc-reg" />
           </div>
+          <div>
+            <Label className="text-xs">HSC Group</Label>
+            <Select value={form.hscGroup} onValueChange={(v) => setForm({ ...form, hscGroup: v })}>
+              <SelectTrigger data-testid="select-edit-hsc-group"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {HSC_GROUPS.map((g) => (<SelectItem key={g} value={g}>{g}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">HSC Board</Label>
+            <Select value={form.hscBoard} onValueChange={(v) => setForm({ ...form, hscBoard: v })}>
+              <SelectTrigger data-testid="select-edit-hsc-board"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {BANGLADESH_BOARDS.map((b) => (<SelectItem key={b} value={b}>{b}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">SSC Roll</Label>
+            <Input value={form.sscRoll} onChange={(e) => setForm({ ...form, sscRoll: e.target.value })} data-testid="input-edit-ssc-roll" />
+          </div>
+          <div>
+            <Label className="text-xs">SSC Reg</Label>
+            <Input value={form.sscReg} onChange={(e) => setForm({ ...form, sscReg: e.target.value })} data-testid="input-edit-ssc-reg" />
+          </div>
+          <div>
+            <Label className="text-xs">SSC Group</Label>
+            <Select value={form.sscGroup} onValueChange={(v) => setForm({ ...form, sscGroup: v })}>
+              <SelectTrigger data-testid="select-edit-ssc-group"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {HSC_GROUPS.map((g) => (<SelectItem key={g} value={g}>{g}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">SSC Board</Label>
+            <Select value={form.sscBoard} onValueChange={(v) => setForm({ ...form, sscBoard: v })}>
+              <SelectTrigger data-testid="select-edit-ssc-board"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {BANGLADESH_BOARDS.map((b) => (<SelectItem key={b} value={b}>{b}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="mt-4">
+          <Button onClick={() => updateMutation.mutate(form)} disabled={updateMutation.isPending} data-testid="button-save-profile">
+            <Save className="h-3.5 w-3.5 mr-1" />
+            {updateMutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
       </CardContent>
     </Card>
