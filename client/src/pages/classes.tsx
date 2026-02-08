@@ -47,7 +47,7 @@ export default function ClassesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
-              <Skeleton className="aspect-video w-full rounded-t-xl rounded-b-none" />
+              <Skeleton className="h-48 w-full rounded-t-xl rounded-b-none" />
               <CardContent className="pt-4"><Skeleton className="h-5 w-3/4 mb-2" /><Skeleton className="h-4 w-1/2" /></CardContent>
             </Card>
           ))}
@@ -57,7 +57,7 @@ export default function ClassesPage() {
           {filtered.map((cls, idx) => (
             <motion.div key={cls.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
               <Card className="overflow-visible flex flex-col h-full" data-testid={`card-class-${cls.id}`}>
-                <div className="relative aspect-video bg-muted rounded-t-xl flex items-center justify-center">
+                <div className="relative h-48 bg-muted rounded-t-xl flex items-center justify-center overflow-hidden">
                   {cls.thumbnail ? (
                     <img src={cls.thumbnail} alt={cls.title} className="w-full h-full object-cover rounded-t-xl" loading="lazy" />
                   ) : (

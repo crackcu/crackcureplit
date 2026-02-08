@@ -33,7 +33,7 @@ export default function CoursesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i}>
-              <Skeleton className="aspect-video w-full rounded-t-xl rounded-b-none" />
+              <Skeleton className="h-48 w-full rounded-t-xl rounded-b-none" />
               <CardContent className="pt-4">
                 <Skeleton className="h-5 w-3/4 mb-2" />
                 <Skeleton className="h-4 w-full mb-1" />
@@ -52,7 +52,7 @@ export default function CoursesPage() {
               transition={{ duration: 0.3, delay: idx * 0.05 }}
             >
               <Card className="overflow-visible flex flex-col h-full" data-testid={`card-course-${course.id}`}>
-                <div className="relative aspect-video bg-muted rounded-t-xl flex items-center justify-center">
+                <div className="relative h-48 bg-muted rounded-t-xl flex items-center justify-center overflow-hidden">
                   {course.bannerImage ? (
                     <img
                       src={course.bannerImage}
