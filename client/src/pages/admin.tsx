@@ -306,8 +306,7 @@ function RegFormTab() {
   const [sscYear, setSscYear] = useState("");
   const [action, setAction] = useState("");
 
-  const uniqueHscYears = Array.from(new Set(allUsers?.map((u) => u.hscYear).filter(Boolean) || [])).sort();
-  const uniqueSscYears = Array.from(new Set(allUsers?.map((u) => u.sscYear).filter(Boolean) || [])).sort();
+  const yearOptions = Array.from({ length: 10 }, (_, i) => String(new Date().getFullYear() - i));
 
   const effectiveHsc = hscYear && hscYear !== "__clear__" ? hscYear : "";
   const effectiveSsc = sscYear && sscYear !== "__clear__" ? sscYear : "";
@@ -356,8 +355,8 @@ function RegFormTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__clear__">All HSC Years</SelectItem>
-                  {uniqueHscYears.map((y) => (
-                    <SelectItem key={y} value={y!}>{y}</SelectItem>
+                  {yearOptions.map((y) => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -370,8 +369,8 @@ function RegFormTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__clear__">All SSC Years</SelectItem>
-                  {uniqueSscYears.map((y) => (
-                    <SelectItem key={y} value={y!}>{y}</SelectItem>
+                  {yearOptions.map((y) => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
