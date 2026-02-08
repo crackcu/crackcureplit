@@ -78,7 +78,7 @@ export default function ResourcesPage() {
                   {resource.access === "paid" && !user?.isPremium ? (
                     <Button size="sm" variant="outline" disabled>Premium Only</Button>
                   ) : (
-                    <Button variant="outline" size="sm" data-testid={`button-download-${resource.id}`}>
+                    <Button variant="outline" size="sm" onClick={() => window.open(resource.fileUrl, "_blank")} data-testid={`button-download-${resource.id}`}>
                       <Download className="h-3.5 w-3.5 mr-1" />
                       Download
                     </Button>

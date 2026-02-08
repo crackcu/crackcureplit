@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,15 +6,31 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { BookOpen, Calendar, Image as ImageIcon } from "lucide-react";
+import { BookOpen, Calendar, Image as ImageIcon, Loader2 } from "lucide-react";
 import type { Course } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CoursesPage() {
   const { data: courses, isLoading } = useQuery<Course[]>({
     queryKey: ["/api/courses"],
   });
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  const enrollMutation = useMutation({
+    mutationFn: async (courseId: number) => {
+      await apiRequest("POST", `/api/enroll/${courseId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-enrollments"] });
+      toast({ title: "Enrolled successfully!" });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8" data-testid="page-courses">
@@ -104,8 +120,8 @@ export default function CoursesPage() {
                       Premium Only
                     </Button>
                   ) : (
-                    <Button size="sm" data-testid={`button-course-enroll-${course.id}`}>
-                      Enroll
+                    <Button size="sm" onClick={() => enrollMutation.mutate(course.id)} disabled={enrollMutation.isPending} data-testid={`button-course-enroll-${course.id}`}>
+                      {enrollMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Enroll"}
                     </Button>
                   )}
                 </CardFooter>

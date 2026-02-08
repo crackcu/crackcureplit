@@ -91,7 +91,7 @@ export default function ClassesPage() {
                   {cls.access === "paid" && !user?.isPremium ? (
                     <Button size="sm" variant="outline" disabled>Premium Only</Button>
                   ) : (
-                    <Button size="sm" data-testid={`button-watch-${cls.id}`}>
+                    <Button size="sm" onClick={() => window.open(cls.videoUrl, "_blank")} data-testid={`button-watch-${cls.id}`}>
                       <Play className="h-3.5 w-3.5 mr-1" />
                       Watch
                     </Button>

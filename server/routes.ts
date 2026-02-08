@@ -329,6 +329,14 @@ export async function registerRoutes(
   app.post("/api/enroll/:courseId", requireAuth, async (req, res) => {
     try {
       const courseId = parseInt(req.params.courseId);
+      const course = await storage.getCourse(courseId);
+      if (!course) return res.status(404).json({ message: "Course not found" });
+      if (course.access === "paid") {
+        const user = await storage.getUser(req.session.userId!);
+        if (!user?.isPremium) {
+          return res.status(403).json({ message: "This is a premium course. Upgrade to access it." });
+        }
+      }
       const existing = await storage.getEnrollment(req.session.userId!, courseId);
       if (existing) {
         return res.status(400).json({ message: "Already enrolled" });
