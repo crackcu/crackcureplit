@@ -20,24 +20,24 @@ const SOCIAL_LINKS = [
 
 export function Footer() {
   return (
-    <footer className="border-t bg-card" data-testid="footer">
+    <footer className="bg-black text-white" data-testid="footer">
       <div className="max-w-7xl mx-auto px-4 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="space-y-3">
-            <Logo />
-            <p className="text-sm text-muted-foreground max-w-xs">
+            <Logo variant="light" />
+            <p className="text-sm text-white/60 max-w-xs">
               Don't Just Study, Crack It! Your ultimate platform for Chittagong University admission preparation.
             </p>
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-3">Quick Links</h4>
+            <h4 className="font-semibold text-sm mb-3 text-white">Quick Links</h4>
             <ul className="space-y-2">
               {QUICK_LINKS.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-sm text-white/60 hover:text-primary transition-colors"
                     data-testid={`footer-link-${link.label.toLowerCase().replace(/\s/g, "-")}`}
                   >
                     {link.label}
@@ -48,7 +48,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold text-sm mb-3">Contact Us</h4>
+            <h4 className="font-semibold text-sm mb-3 text-white">Contact Us</h4>
             <div className="flex items-center gap-2 mb-3">
               {SOCIAL_LINKS.map((social) => (
                 <a
@@ -56,14 +56,14 @@ export function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-8 w-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  className="h-8 w-8 rounded-md bg-white/10 flex items-center justify-center text-white/60 hover:text-primary transition-colors"
                   data-testid={`social-${social.label.toLowerCase()}`}
                 >
                   <social.icon className="h-4 w-4" />
                 </a>
               ))}
             </div>
-            <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="space-y-2 text-sm text-white/60">
               <div className="flex items-center gap-2">
                 <Phone className="h-3.5 w-3.5 shrink-0" />
                 <span>+880 1522-132809</span>
@@ -80,8 +80,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t text-center">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-8 pt-6 border-t border-white/10 text-center">
+          <p className="text-xs text-white/40">
             &copy; {new Date().getFullYear()} Crack-CU. All rights reserved.
           </p>
         </div>

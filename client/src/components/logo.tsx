@@ -1,6 +1,6 @@
 import logoSrc from "@/assets/logo.svg";
 
-export function Logo({ className }: { className?: string }) {
+export function Logo({ className, variant = "default" }: { className?: string; variant?: "default" | "light" }) {
   return (
     <div className={`flex items-center gap-2 ${className || ""}`} data-testid="logo">
       <img
@@ -10,7 +10,7 @@ export function Logo({ className }: { className?: string }) {
       />
       <span className="font-bold text-lg tracking-tight">
         <span className="text-primary">Crack</span>
-        <span className="text-foreground">-CU</span>
+        <span className={variant === "light" ? "text-white" : "text-foreground"}>-CU</span>
       </span>
     </div>
   );
