@@ -1,0 +1,112 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
+import { format } from "date-fns";
+import { Calendar, Video, Play } from "lucide-react";
+import type { Class } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
+import { Link } from "wouter";
+
+const FILTER_TAGS = ["All", "English", "Analytical Skill", "Problem Solving"];
+
+export default function ClassesPage() {
+  const { data: classItems, isLoading } = useQuery<Class[]>({
+    queryKey: ["/api/classes"],
+  });
+  const { user } = useAuth();
+  const [filter, setFilter] = useState("All");
+
+  const filtered = classItems?.filter((c) => filter === "All" || c.tag === filter) ?? [];
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8" data-testid="page-classes">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        <h1 className="text-2xl font-bold tracking-tight mb-2">Classes</h1>
+        <p className="text-muted-foreground mb-6">Watch video classes from our expert mentors</p>
+      </motion.div>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        {FILTER_TAGS.map((tag) => (
+          <Button
+            key={tag}
+            variant={filter === tag ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilter(tag)}
+            data-testid={`filter-${tag.toLowerCase().replace(/\s/g, "-")}`}
+          >
+            {tag}
+          </Button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <Skeleton className="h-44 w-full rounded-t-xl rounded-b-none" />
+              <CardContent className="pt-4"><Skeleton className="h-5 w-3/4 mb-2" /><Skeleton className="h-4 w-1/2" /></CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filtered.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((cls, idx) => (
+            <motion.div key={cls.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+              <Card className="overflow-visible flex flex-col h-full" data-testid={`card-class-${cls.id}`}>
+                <div className="relative h-44 bg-muted rounded-t-xl flex items-center justify-center">
+                  {cls.thumbnail ? (
+                    <img src={cls.thumbnail} alt={cls.title} className="w-full h-full object-cover rounded-t-xl" loading="lazy" />
+                  ) : (
+                    <Video className="h-12 w-12 text-muted-foreground/40" />
+                  )}
+                  <div className="absolute inset-0 bg-black/20 rounded-t-xl flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <div className="h-12 w-12 rounded-full bg-white/90 flex items-center justify-center">
+                      <Play className="h-5 w-5 text-foreground ml-0.5" />
+                    </div>
+                  </div>
+                </div>
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <CardTitle className="text-base line-clamp-1">{cls.title}</CardTitle>
+                    <div className="flex gap-1 flex-wrap">
+                      <Badge variant="secondary">{cls.tag}</Badge>
+                      <Badge variant={cls.access === "paid" ? "default" : "outline"}>
+                        {cls.access === "paid" ? "Paid" : "Free"}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  {cls.description && <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{cls.description}</p>}
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    <span>{format(new Date(cls.createdAt), "MMM dd, yyyy")}</span>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  {cls.access === "paid" && !user?.isPremium ? (
+                    <Button size="sm" variant="outline" disabled>Premium Only</Button>
+                  ) : (
+                    <Button size="sm" data-testid={`button-watch-${cls.id}`}>
+                      <Play className="h-3.5 w-3.5 mr-1" />
+                      Watch
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16">
+          <Video className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
+          <p className="text-muted-foreground">No classes available for this filter.</p>
+        </div>
+      )}
+    </div>
+  );
+}
