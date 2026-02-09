@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { Calendar, Bell } from "lucide-react";
+import { Calendar, Bell, ExternalLink } from "lucide-react";
 import type { Notice } from "@shared/schema";
 
 const FILTER_TAGS = ["All", "Admission", "CU Notice", "Crack-CU Notice"];
@@ -16,6 +17,7 @@ export default function NoticesPage() {
     queryKey: ["/api/notices"],
   });
   const [filter, setFilter] = useState("All");
+  const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
 
   const filtered = noticeItems?.filter((n) => filter === "All" || n.tag === filter) ?? [];
 
@@ -63,9 +65,29 @@ export default function NoticesPage() {
                 <CardContent>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
                     <Calendar className="h-3 w-3" />
-                    <span>{format(new Date(notice.createdAt), "MMM dd, yyyy")}</span>
+                    <span>{notice.date ? format(new Date(notice.date), "MMM dd, yyyy") : format(new Date(notice.createdAt), "MMM dd, yyyy")}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">{notice.description}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{notice.description}</p>
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
+                    {notice.description.length > 150 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedNotice(notice)}
+                        data-testid={`button-readmore-${notice.id}`}
+                      >
+                        Read More
+                      </Button>
+                    )}
+                    {notice.url && (
+                      <a href={notice.url} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm" data-testid={`button-url-${notice.id}`}>
+                          <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                          Visit Link
+                        </Button>
+                      </a>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -77,6 +99,35 @@ export default function NoticesPage() {
           <p className="text-muted-foreground">No notices available for this filter.</p>
         </div>
       )}
+
+      <Dialog open={!!selectedNotice} onOpenChange={(open) => !open && setSelectedNotice(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg flex items-start gap-2">
+              <Bell className="h-5 w-5 mt-0.5 shrink-0" />
+              {selectedNotice?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <Badge variant="secondary">{selectedNotice?.tag}</Badge>
+              <span className="text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3 inline mr-1" />
+                {selectedNotice?.date ? format(new Date(selectedNotice.date), "MMM dd, yyyy") : selectedNotice?.createdAt ? format(new Date(selectedNotice.createdAt), "MMM dd, yyyy") : ""}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{selectedNotice?.description}</p>
+            {selectedNotice?.url && (
+              <a href={selectedNotice.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block">
+                <Button variant="outline" size="sm" data-testid="button-dialog-url">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                  Visit Link
+                </Button>
+              </a>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

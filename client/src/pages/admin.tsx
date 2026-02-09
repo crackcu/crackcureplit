@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1651,6 +1653,28 @@ function NoticesTab() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label className="text-xs">URL (optional)</Label>
+                <Input value={formData.url || ""} onChange={(e) => setFormData({ ...formData, url: e.target.value })} placeholder="https://example.com" data-testid="input-notice-url" />
+              </div>
+              <div>
+                <Label className="text-xs">Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal" data-testid="button-notice-date">
+                      <Calendar className="h-3.5 w-3.5 mr-2" />
+                      {formData.date ? format(new Date(formData.date), "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={formData.date ? new Date(formData.date) : undefined}
+                      onSelect={(d) => setFormData({ ...formData, date: d?.toISOString() || null })}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
               <div className="flex items-center gap-2">
                 <Label className="text-xs">Visible</Label>
                 <Switch checked={formData.isVisible ?? true} onCheckedChange={(v) => setFormData({ ...formData, isVisible: v })} />
@@ -1676,7 +1700,8 @@ function NoticesTab() {
                   <p className="text-sm font-medium">{n.title}</p>
                   <div className="flex items-center gap-2 flex-wrap mt-1">
                     <Badge variant="secondary" className="text-xs">{n.tag}</Badge>
-                    <span className="text-xs text-muted-foreground">{n.createdAt ? format(new Date(n.createdAt), "PP") : ""}</span>
+                    <span className="text-xs text-muted-foreground">{n.date ? format(new Date(n.date), "PP") : n.createdAt ? format(new Date(n.createdAt), "PP") : ""}</span>
+                    {n.url && <Badge variant="outline" className="text-xs">Has Link</Badge>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1">

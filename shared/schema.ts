@@ -309,7 +309,7 @@ export const HSC_GROUPS = ["Business Studies", "Science", "Humanities"] as const
 export const MOCK_TAGS = ["CU Mock", "English", "Analytical Skill", "Problem Solving"] as const;
 export const CLASS_TAGS = ["English", "Analytical Skill", "Problem Solving"] as const;
 export const RESOURCE_TAGS = ["CU QB", "English", "Analytical Skill", "Problem Solving"] as const;
-export const NOTICE_TAGS = ["CU", "Crack-CU"] as const;
+export const NOTICE_TAGS = ["Admission", "CU Notice", "Crack-CU Notice"] as const;
 
 export const ACCESS_LEVELS = ["all", "signin", "paid"] as const;
 export const USER_ROLES = ["student", "mentor", "moderator", "admin"] as const;
