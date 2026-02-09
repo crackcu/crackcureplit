@@ -186,7 +186,7 @@ function UsersTab() {
                   {u.isRestricted && <Badge variant="destructive" className="text-xs">Restricted</Badge>}
                   {(u as any).isSecondTimer && <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 dark:text-amber-400">2nd Timer</Badge>}
                 </div>
-                <p className="text-xs text-muted-foreground">@{u.username} | {u.email} | {u.whatsapp}</p>
+                <p className="text-xs text-muted-foreground">@{u.username} | {u.email} | {u.whatsapp} | HSC {u.hscYear} | SSC {u.sscYear}</p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <Select

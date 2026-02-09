@@ -335,32 +335,68 @@ function EnrolledCourses({ userId }: { userId: number }) {
     queryKey: ["/api/my-enrollments"],
   });
 
+  const enrolled = enrollments?.filter((e: any) => e.status === "approved") || [];
+  const pending = enrollments?.filter((e: any) => e.status === "pending") || [];
+
   return (
-    <Card data-testid="card-enrollments">
-      <CardHeader>
-        <CardTitle className="text-base">My Courses</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            {[1, 2].map((i) => (<Skeleton key={i} className="h-10 w-full" />))}
-          </div>
-        ) : enrollments && enrollments.length > 0 ? (
-          <div className="space-y-2">
-            {enrollments.map((e: any) => (
-              <div key={e.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/50" data-testid={`enrollment-${e.id}`}>
-                <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="text-sm truncate flex-1">{e.courseTitle || `Course #${e.courseId}`}</span>
-                <Badge variant={e.status === "approved" ? "default" : e.status === "pending" ? "outline" : "destructive"} className="text-xs shrink-0">
-                  {e.status === "approved" ? "Enrolled" : e.status === "pending" ? "Pending" : "Declined"}
-                </Badge>
+    <div className="space-y-4">
+      <Card data-testid="card-enrolled-courses">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            Enrolled Courses
+            {enrolled.length > 0 && <Badge variant="default" className="text-xs">{enrolled.length}</Badge>}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (<Skeleton key={i} className="h-10 w-full" />))}
+            </div>
+          ) : enrolled.length > 0 ? (
+            <div className="space-y-2">
+              {enrolled.map((e: any) => (
+                <div key={e.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/50" data-testid={`enrollment-${e.id}`}>
+                  <BookOpen className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <span className="text-sm truncate flex-1">{e.courseTitle || `Course #${e.courseId}`}</span>
+                  <Badge variant="default" className="text-xs shrink-0 bg-emerald-600">Enrolled</Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No enrolled courses yet.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {(isLoading || pending.length > 0) && (
+        <Card data-testid="card-pending-courses">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Pending Requests
+              {pending.length > 0 && <Badge variant="outline" className="text-xs">{pending.length}</Badge>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-2">
+                {[1, 2].map((i) => (<Skeleton key={i} className="h-10 w-full" />))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Not enrolled in any courses yet.</p>
-        )}
-      </CardContent>
-    </Card>
+            ) : (
+              <div className="space-y-2">
+                {pending.map((e: any) => (
+                  <div key={e.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/50" data-testid={`enrollment-pending-${e.id}`}>
+                    <Clock className="h-4 w-4 shrink-0 text-amber-500" />
+                    <span className="text-sm truncate flex-1">{e.courseTitle || `Course #${e.courseId}`}</span>
+                    <Badge variant="outline" className="text-xs shrink-0 border-amber-500 text-amber-600 dark:text-amber-400">Pending</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
