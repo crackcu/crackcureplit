@@ -232,7 +232,7 @@ function RegisterForm() {
                 <Select value={form.hscYear} onValueChange={(v) => updateField("hscYear", v)}>
                   <SelectTrigger data-testid="select-hsc-year"><SelectValue placeholder="Year" /></SelectTrigger>
                   <SelectContent>
-                    {Array.from({ length: 10 }, (_, i) => String(new Date().getFullYear() - i)).map((y) => (
+                    {Array.from({ length: 9 }, (_, i) => String(2022 + i)).map((y) => (
                       <SelectItem key={y} value={y}>{y}</SelectItem>
                     ))}
                   </SelectContent>
@@ -277,7 +277,7 @@ function RegisterForm() {
                 <Select value={form.sscYear} onValueChange={(v) => updateField("sscYear", v)}>
                   <SelectTrigger data-testid="select-ssc-year"><SelectValue placeholder="Year" /></SelectTrigger>
                   <SelectContent>
-                    {Array.from({ length: 10 }, (_, i) => String(new Date().getFullYear() - i)).map((y) => (
+                    {Array.from({ length: 9 }, (_, i) => String(2022 + i)).map((y) => (
                       <SelectItem key={y} value={y}>{y}</SelectItem>
                     ))}
                   </SelectContent>

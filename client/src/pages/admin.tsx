@@ -312,7 +312,7 @@ function RegFormTab() {
   const [sscYear, setSscYear] = useState("");
   const [action, setAction] = useState("");
 
-  const yearOptions = Array.from({ length: 10 }, (_, i) => String(new Date().getFullYear() - i));
+  const yearOptions = Array.from({ length: 9 }, (_, i) => String(2022 + i));
 
   const effectiveHsc = hscYear && hscYear !== "__clear__" ? hscYear : "";
   const effectiveSsc = sscYear && sscYear !== "__clear__" ? sscYear : "";
