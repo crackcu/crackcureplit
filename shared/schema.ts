@@ -187,6 +187,8 @@ export const notices = pgTable("notices", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   tag: text("tag").notNull(),
+  url: text("url"),
+  date: timestamp("date"),
   isVisible: boolean("is_visible").notNull().default(true),
   createdBy: integer("created_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
