@@ -172,7 +172,7 @@ export default function MockReviewPage() {
                   )}
 
                   {q.image && (
-                    <img src={q.image} alt="Question" className="max-w-full rounded-md max-h-64 object-contain" />
+                    <img src={q.image} alt={`Question ${q.id} illustration`} className="max-w-full rounded-md max-h-64 object-contain" loading="lazy" />
                   )}
 
                   <p

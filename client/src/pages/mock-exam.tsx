@@ -271,7 +271,7 @@ export default function MockExamPage() {
               )}
 
               {q.image && (
-                <img src={q.image} alt="Question" className="max-w-full rounded-md max-h-64 object-contain" data-testid={`img-question-${q.id}`} />
+                <img src={q.image} alt={`Question ${q.id} illustration`} className="max-w-full rounded-md max-h-64 object-contain" loading="lazy" data-testid={`img-question-${q.id}`} />
               )}
 
               <p

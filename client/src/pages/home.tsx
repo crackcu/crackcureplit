@@ -253,6 +253,7 @@ function CoursesSection() {
                     src={course.bannerImage}
                     alt={course.title}
                     className="w-full h-full object-cover rounded-t-xl"
+                    loading="lazy"
                     data-testid={`img-course-${course.id}`}
                   />
                 ) : (
@@ -415,6 +416,7 @@ function ClassesSection() {
                     src={cls.thumbnail}
                     alt={cls.title}
                     className="w-full h-full object-cover rounded-t-xl"
+                    loading="lazy"
                     data-testid={`img-class-${cls.id}`}
                   />
                 ) : (
