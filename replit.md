@@ -59,17 +59,18 @@ Crack-CU is a mobile-responsive ed-tech platform for Chittagong University admis
 - Bangladesh education context (boards, HSC/SSC groups)
 - All times displayed in Bangladesh Standard Time (BST, UTC+6)
 - SMTP: crackcu.info@gmail.com / app password stored in env vars
-- Mock test marking: EngP(+2/-0.5,pass13), EngO(+1/-0.25), AS(+2/-0.5,pass10), PS(+2/-0.5,pass10), overall pass 40, -3 penalty for second-timers
+- Mock test marking: EngP(+2/-0.5), EngO(+1/-0.25), English pass=13 on EngP+EngO total, AS(+2/-0.5,pass10), PS(+2/-0.5,pass10), overall pass 40, -3 penalty for second-timers
 - All image fields support both URL input and file upload
 
 ## Database Tables
 users, heroBanners, courses, mockTests, mockSubmissions, classes, resources, notices, teamMembers, enrollments, siteSettings
 
 ## Mock Test Grading Rules
-- EngP: +2 correct, -0.5 wrong, pass mark 13
-- EngO: +1 correct, -0.25 wrong, no individual pass mark
+- EngP: +2 correct, -0.5 wrong
+- EngO: +1 correct, -0.25 wrong
+- English pass mark: 13 (applied to EngP+EngO combined total, NOT individually)
 - AS: +2 correct, -0.5 wrong, pass mark 10
 - PS: +2 correct, -0.5 wrong, pass mark 10
 - Overall pass mark: 40 (net marks)
-- 2nd+ attempt penalty: -3 from total
+- 2nd timer penalty: -3 from total
 - Unanswered questions: no marks deducted

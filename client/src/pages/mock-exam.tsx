@@ -166,8 +166,9 @@ export default function MockExamPage() {
               <h3 className="font-medium text-center">{test.title}</h3>
 
               <div className="grid grid-cols-2 gap-3">
-                <ResultCard label="English Passage" marks={result.engPMarks ?? 0} pass={13} />
+                <ResultCard label="English Passage" marks={result.engPMarks ?? 0} />
                 <ResultCard label="English Other" marks={result.engOMarks ?? 0} />
+                <ResultCard label="English Total" marks={(result.engPMarks ?? 0) + (result.engOMarks ?? 0)} pass={13} />
                 <ResultCard label="Analytical Skill" marks={result.asMarks ?? 0} pass={10} />
                 <ResultCard label="Problem Solving" marks={result.psMarks ?? 0} pass={10} />
               </div>
@@ -183,7 +184,7 @@ export default function MockExamPage() {
                     {user?.isSecondTimer ? "2nd Timer" : "1st Timer"}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">(Pass mark: 40 overall, EngP 13, AS 10, PS 10)</p>
+                <p className="text-xs text-muted-foreground">(Pass mark: 40 overall, English 13, AS 10, PS 10)</p>
               </div>
 
               <div className="flex justify-center gap-2 pt-4">

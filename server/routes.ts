@@ -469,8 +469,8 @@ export async function registerRoutes(
       const attemptNumber = prevSubmissions.length + 1;
 
       // Grading rules:
-      // EngP: +2 correct, -0.5 wrong, pass 13
-      // EngO: +1 correct, -0.25 wrong
+      // EngP: +2 correct, -0.5 wrong | EngO: +1 correct, -0.25 wrong
+      // English pass mark: 13 (applied to EngP+EngO total)
       // AS: +2 correct, -0.5 wrong, pass 10
       // PS: +2 correct, -0.5 wrong, pass 10
       // Overall pass: 40
@@ -511,11 +511,12 @@ export async function registerRoutes(
         netMarks -= 3;
       }
 
-      const passedEngP = engPMarks >= markingRules.EngP.pass;
+      const englishTotal = engPMarks + engOMarks;
+      const passedEnglish = englishTotal >= 13;
       const passedAS = asMarks >= markingRules.AS.pass;
       const passedPS = psMarks >= markingRules.PS.pass;
       const passedOverall = netMarks >= 40;
-      const passed = passedEngP && passedAS && passedPS && passedOverall;
+      const passed = passedEnglish && passedAS && passedPS && passedOverall;
 
       const submission = await storage.createSubmission({
         mockTestId,
@@ -548,8 +549,9 @@ export async function registerRoutes(
                 <p>Hi ${user.fullName},</p>
                 <p>You have submitted <strong>${test.title}</strong>. Here are your results:</p>
                 <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-                  <tr style="background: #f3f4f6;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>English Passage (EngP)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${engPMarks.toFixed(2)} ${passedEngP ? "(Pass)" : "(Fail, need 13)"}</td></tr>
+                  <tr style="background: #f3f4f6;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>English Passage (EngP)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${engPMarks.toFixed(2)}</td></tr>
                   <tr><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>English Other (EngO)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${engOMarks.toFixed(2)}</td></tr>
+                  <tr style="background: #e0f2fe;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>English Total (EngP+EngO)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${englishTotal.toFixed(2)} ${passedEnglish ? "(Pass)" : "(Fail, need 13)"}</td></tr>
                   <tr style="background: #f3f4f6;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Analytical Skill (AS)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${asMarks.toFixed(2)} ${passedAS ? "(Pass)" : "(Fail, need 10)"}</td></tr>
                   <tr><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Problem Solving (PS)</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${psMarks.toFixed(2)} ${passedPS ? "(Pass)" : "(Fail, need 10)"}</td></tr>
                   <tr style="background: #f3f4f6;"><td style="padding: 8px; border: 1px solid #e5e7eb;"><strong>Total Marks</strong></td><td style="padding: 8px; border: 1px solid #e5e7eb; text-align: right;">${totalMarks.toFixed(2)}</td></tr>
