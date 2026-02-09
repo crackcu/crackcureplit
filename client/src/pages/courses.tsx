@@ -28,7 +28,8 @@ export default function CoursesPage() {
     enabled: !!user,
   });
 
-  const enrolledCourseIds = new Set(enrollments?.map((e) => e.courseId) || []);
+  const enrollmentMap: Record<number, string> = {};
+  enrollments?.forEach((e) => { enrollmentMap[e.courseId] = e.status; });
 
   const enrollMutation = useMutation({
     mutationFn: async (courseId: number) => {
@@ -135,10 +136,19 @@ export default function CoursesPage() {
                     <Link href="/auth">
                       <Button size="sm" variant="outline" data-testid={`button-login-enroll-${course.id}`}>Login to Enroll</Button>
                     </Link>
-                  ) : enrolledCourseIds.has(course.id) ? (
+                  ) : enrollmentMap[course.id] === "approved" ? (
                     <Button size="sm" variant="outline" disabled data-testid={`button-enrolled-${course.id}`}>
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-green-600" />
                       Enrolled
+                    </Button>
+                  ) : enrollmentMap[course.id] === "pending" ? (
+                    <Button size="sm" variant="outline" disabled data-testid={`button-pending-${course.id}`}>
+                      <Loader2 className="h-3.5 w-3.5 mr-1 text-amber-500" />
+                      Pending
+                    </Button>
+                  ) : enrollmentMap[course.id] === "declined" ? (
+                    <Button size="sm" variant="outline" disabled data-testid={`button-declined-${course.id}`}>
+                      Declined
                     </Button>
                   ) : course.access === "paid" && !user?.isPremium ? (
                     <Button size="sm" variant="outline" disabled data-testid={`button-course-premium-${course.id}`}>
@@ -170,11 +180,11 @@ export default function CoursesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              Enrollment Successful
+              <CheckCircle2 className="h-5 w-5 text-amber-500" />
+              Enrollment Request Submitted
             </DialogTitle>
             <DialogDescription className="pt-3 text-base">
-              You have successfully enrolled in <strong>{selectedCourse?.title}</strong>. You will soon be contacted by our representative.
+              Your enrollment request for <strong>{selectedCourse?.title}</strong> has been submitted. You will soon be contacted by our representative.
             </DialogDescription>
           </DialogHeader>
           <Button onClick={() => setShowConfirm(false)} data-testid="button-close-enroll-dialog">

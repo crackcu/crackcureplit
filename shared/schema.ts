@@ -240,6 +240,7 @@ export const enrollments = pgTable("enrollments", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   courseId: integer("course_id").notNull(),
+  status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

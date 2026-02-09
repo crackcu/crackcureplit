@@ -350,7 +350,10 @@ function EnrolledCourses({ userId }: { userId: number }) {
             {enrollments.map((e: any) => (
               <div key={e.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/50" data-testid={`enrollment-${e.id}`}>
                 <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="text-sm truncate">{e.courseTitle || `Course #${e.courseId}`}</span>
+                <span className="text-sm truncate flex-1">{e.courseTitle || `Course #${e.courseId}`}</span>
+                <Badge variant={e.status === "approved" ? "default" : e.status === "pending" ? "outline" : "destructive"} className="text-xs shrink-0">
+                  {e.status === "approved" ? "Enrolled" : e.status === "pending" ? "Pending" : "Declined"}
+                </Badge>
               </div>
             ))}
           </div>

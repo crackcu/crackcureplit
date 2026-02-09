@@ -486,9 +486,12 @@ function RegFormTab() {
 
 function CoursesTab() {
   const { data: courseList, isLoading } = useQuery<Course[]>({ queryKey: ["/api/admin/courses"] });
+  const { data: allEnrollments } = useQuery<any[]>({ queryKey: ["/api/admin/enrollments"] });
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [viewingCourseId, setViewingCourseId] = useState<number | null>(null);
+  const [enrollFilter, setEnrollFilter] = useState<string>("pending");
   const deleteMutation = useDeleteMutation("/api/admin/courses", "/api/admin/courses");
 
   const createMutation = useMutation({
@@ -506,6 +509,19 @@ function CoursesTab() {
     },
   });
 
+  const enrollmentAction = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      await apiRequest("PATCH", `/api/admin/enrollments/${id}`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/enrollments"] });
+      toast({ title: "Enrollment updated" });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message, variant: "destructive" });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = { ...formData };
@@ -515,6 +531,79 @@ function CoursesTab() {
     if (data.isVisible === undefined) data.isVisible = true;
     createMutation.mutate(data);
   };
+
+  const courseEnrollments = viewingCourseId ? (allEnrollments?.filter((e: any) => e.courseId === viewingCourseId) || []) : [];
+  const filteredEnrollments = courseEnrollments.filter((e: any) => enrollFilter === "all" || e.status === enrollFilter);
+  const viewingCourse = courseList?.find((c) => c.id === viewingCourseId);
+
+  const pendingCount = (courseId: number) => allEnrollments?.filter((e: any) => e.courseId === courseId && e.status === "pending").length || 0;
+  const approvedCount = (courseId: number) => allEnrollments?.filter((e: any) => e.courseId === courseId && e.status === "approved").length || 0;
+
+  if (viewingCourseId && viewingCourse) {
+    return (
+      <div className="space-y-4">
+        <Button variant="outline" size="sm" onClick={() => setViewingCourseId(null)} data-testid="button-back-courses">
+          Back to Courses
+        </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{viewingCourse.title} - Enrollments</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {["pending", "approved", "declined", "all"].map((f) => (
+                <Button key={f} size="sm" variant={enrollFilter === f ? "default" : "outline"} onClick={() => setEnrollFilter(f)} data-testid={`filter-enroll-${f}`}>
+                  {f === "pending" ? `Pending (${courseEnrollments.filter((e: any) => e.status === "pending").length})` :
+                   f === "approved" ? `Enrolled (${courseEnrollments.filter((e: any) => e.status === "approved").length})` :
+                   f === "declined" ? `Declined (${courseEnrollments.filter((e: any) => e.status === "declined").length})` : "All"}
+                </Button>
+              ))}
+            </div>
+            {filteredEnrollments.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">No {enrollFilter === "all" ? "" : enrollFilter} enrollments.</p>
+            ) : (
+              <div className="space-y-2">
+                {filteredEnrollments.map((e: any, idx: number) => (
+                  <Card key={e.id} data-testid={`enrollment-row-${e.id}`}>
+                    <CardContent className="pt-3 pb-3">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-muted-foreground">{idx + 1}.</span>
+                            <p className="text-sm font-medium">{e.userFullName}</p>
+                            <Badge variant="secondary" className="text-xs">@{e.userName}</Badge>
+                            <Badge variant={e.status === "approved" ? "default" : e.status === "pending" ? "outline" : "destructive"} className="text-xs">
+                              {e.status === "approved" ? "Enrolled" : e.status === "pending" ? "Pending" : "Declined"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{e.userEmail} | {e.userWhatsapp}</p>
+                        </div>
+                        {e.status === "pending" && (
+                          <div className="flex gap-1">
+                            <Button size="sm" onClick={() => enrollmentAction.mutate({ id: e.id, status: "approved" })} disabled={enrollmentAction.isPending} data-testid={`button-approve-${e.id}`}>
+                              Approve
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => enrollmentAction.mutate({ id: e.id, status: "declined" })} disabled={enrollmentAction.isPending} data-testid={`button-decline-${e.id}`}>
+                              Decline
+                            </Button>
+                          </div>
+                        )}
+                        {e.status === "declined" && (
+                          <Button size="sm" onClick={() => enrollmentAction.mutate({ id: e.id, status: "approved" })} disabled={enrollmentAction.isPending} data-testid={`button-approve-${e.id}`}>
+                            Approve
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -610,9 +699,24 @@ function CoursesTab() {
                       {c.lastDate && (
                         <p className="text-xs text-muted-foreground">Last date: {format(new Date(c.lastDate), "PP")}</p>
                       )}
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        {pendingCount(c.id) > 0 && (
+                          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 dark:text-amber-400">
+                            {pendingCount(c.id)} Pending
+                          </Badge>
+                        )}
+                        {approvedCount(c.id) > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {approvedCount(c.id)} Enrolled
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => { setViewingCourseId(c.id); setEnrollFilter("pending"); }} data-testid={`button-view-enrollments-${c.id}`}>
+                      Enrollments
+                    </Button>
                     <Badge variant={c.isVisible ? "default" : "outline"}>
                       {c.isVisible ? "Visible" : "Hidden"}
                     </Badge>

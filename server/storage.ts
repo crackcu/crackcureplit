@@ -84,6 +84,9 @@ export interface IStorage {
   createEnrollment(data: InsertEnrollment): Promise<Enrollment>;
   getUserEnrollments(userId: number): Promise<Enrollment[]>;
   getEnrollment(userId: number, courseId: number): Promise<Enrollment | undefined>;
+  updateEnrollment(id: number, data: Partial<Enrollment>): Promise<Enrollment | undefined>;
+  getEnrollmentsByCourseId(courseId: number): Promise<Enrollment[]>;
+  getAllEnrollments(): Promise<Enrollment[]>;
 
   getSetting(key: string): Promise<SiteSetting | undefined>;
   setSetting(key: string, value: any): Promise<SiteSetting>;
@@ -360,6 +363,19 @@ export class DatabaseStorage implements IStorage {
   async getEnrollment(userId: number, courseId: number): Promise<Enrollment | undefined> {
     const [enrollment] = await db.select().from(enrollments).where(and(eq(enrollments.userId, userId), eq(enrollments.courseId, courseId)));
     return enrollment;
+  }
+
+  async updateEnrollment(id: number, data: Partial<Enrollment>): Promise<Enrollment | undefined> {
+    const [updated] = await db.update(enrollments).set(data).where(eq(enrollments.id, id)).returning();
+    return updated;
+  }
+
+  async getEnrollmentsByCourseId(courseId: number): Promise<Enrollment[]> {
+    return db.select().from(enrollments).where(eq(enrollments.courseId, courseId)).orderBy(desc(enrollments.createdAt));
+  }
+
+  async getAllEnrollments(): Promise<Enrollment[]> {
+    return db.select().from(enrollments).orderBy(desc(enrollments.createdAt));
   }
 
   async getSetting(key: string): Promise<SiteSetting | undefined> {

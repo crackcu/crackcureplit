@@ -361,7 +361,12 @@ export async function registerRoutes(
 
   app.get("/api/my-enrollments", requireAuth, async (req, res) => {
     const enrollmentList = await storage.getUserEnrollments(req.session.userId!);
-    res.json(enrollmentList);
+    const allCourses = await storage.getAllCourses();
+    const enriched = enrollmentList.map((e) => {
+      const course = allCourses.find((c) => c.id === e.courseId);
+      return { ...e, courseTitle: course?.title || "" };
+    });
+    res.json(enriched);
   });
 
   app.post("/api/enroll/:courseId", requireAuth, async (req, res) => {
@@ -376,10 +381,15 @@ export async function registerRoutes(
         }
       }
       const existing = await storage.getEnrollment(req.session.userId!, courseId);
-      if (existing) {
-        return res.status(400).json({ message: "Already enrolled" });
+      if (existing && existing.status !== "declined") {
+        return res.status(400).json({ message: existing.status === "approved" ? "Already enrolled" : "Enrollment request already pending" });
       }
-      const enrollment = await storage.createEnrollment({ userId: req.session.userId!, courseId });
+      let enrollment;
+      if (existing && existing.status === "declined") {
+        enrollment = await storage.updateEnrollment(existing.id, { status: "pending" });
+      } else {
+        enrollment = await storage.createEnrollment({ userId: req.session.userId!, courseId, status: "pending" });
+      }
 
       const user = await storage.getUser(req.session.userId!);
       if (user) {
@@ -680,6 +690,50 @@ export async function registerRoutes(
       }
 
       res.json({ message: `Successfully updated ${count} user(s). Rule saved for future registrations.`, count });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/admin/enrollments", requireAdmin, async (req, res) => {
+    try {
+      const courseId = req.query.courseId ? parseInt(req.query.courseId as string) : undefined;
+      let enrollmentList;
+      if (courseId) {
+        enrollmentList = await storage.getEnrollmentsByCourseId(courseId);
+      } else {
+        enrollmentList = await storage.getAllEnrollments();
+      }
+      const allUsers = await storage.getAllUsers();
+      const allCourses = await storage.getAllCourses();
+      const enriched = enrollmentList.map((e) => {
+        const u = allUsers.find((u) => u.id === e.userId);
+        const c = allCourses.find((c) => c.id === e.courseId);
+        return {
+          ...e,
+          userName: u?.username || "",
+          userFullName: u?.fullName || "",
+          userWhatsapp: u?.whatsapp || "",
+          userEmail: u?.email || "",
+          courseTitle: c?.title || "",
+        };
+      });
+      res.json(enriched);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.patch("/api/admin/enrollments/:id", requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      if (!["approved", "declined"].includes(status)) {
+        return res.status(400).json({ message: "Status must be approved or declined" });
+      }
+      const updated = await storage.updateEnrollment(id, { status });
+      if (!updated) return res.status(404).json({ message: "Enrollment not found" });
+      res.json(updated);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
