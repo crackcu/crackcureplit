@@ -974,6 +974,7 @@ export async function registerRoutes(
     try {
       const data = { ...req.body, createdBy: req.session.userId };
       if (data.isVisible === undefined) data.isVisible = true;
+      if (data.date) data.date = new Date(data.date);
       const notice = await storage.createNotice(data);
       res.json(notice);
     } catch (error: any) {
@@ -984,7 +985,9 @@ export async function registerRoutes(
   app.patch("/api/admin/notices/:id", requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updated = await storage.updateNotice(id, req.body);
+      const body = { ...req.body };
+      if (body.date) body.date = new Date(body.date);
+      const updated = await storage.updateNotice(id, body);
       if (!updated) return res.status(404).json({ message: "Notice not found" });
       res.json(updated);
     } catch (error: any) {
