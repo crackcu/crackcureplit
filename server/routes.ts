@@ -380,6 +380,45 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Already enrolled" });
       }
       const enrollment = await storage.createEnrollment({ userId: req.session.userId!, courseId });
+
+      const user = await storage.getUser(req.session.userId!);
+      if (user) {
+        try {
+          await transporter.sendMail({
+            from: `"Crack-CU" <${process.env.SMTP_USER}>`,
+            to: process.env.SMTP_USER || "crackcu.info@gmail.com",
+            subject: `New Enrollment Request - ${course.title}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+                <p>Hi!</p>
+                <p><strong>${user.username}</strong>, wants to enroll in <strong>${course.title}</strong></p>
+                <br/>
+                <p><strong>User Details:</strong></p>
+                <table style="border-collapse: collapse; width: 100%;">
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>Full Name</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.fullName}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>Username</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.username}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>Email</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.email}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>HSC Roll</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.hscRoll}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>HSC Reg</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.hscReg}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>HSC Year</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.hscYear}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>HSC Group</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.hscGroup}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>HSC Board</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.hscBoard}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>SSC Roll</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.sscRoll}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>SSC Reg</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.sscReg}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>SSC Year</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.sscYear}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>SSC Group</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.sscGroup}</td></tr>
+                  <tr><td style="padding: 6px 12px; border: 1px solid #e5e7eb;"><strong>SSC Board</strong></td><td style="padding: 6px 12px; border: 1px solid #e5e7eb;">${user.sscBoard}</td></tr>
+                </table>
+                <br/>
+                <p><strong>User WhatsApp Number:</strong> <a href="https://wa.me/${user.whatsapp?.replace(/\D/g, '')}">${user.whatsapp}</a></p>
+              </div>
+            `,
+          });
+        } catch (emailErr) {
+          console.error("Failed to send enrollment notification email:", emailErr);
+        }
+      }
+
       res.json(enrollment);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Enrollment failed" });

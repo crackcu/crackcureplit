@@ -1,13 +1,15 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { BookOpen, Calendar, Image as ImageIcon, Loader2 } from "lucide-react";
-import type { Course } from "@shared/schema";
+import { BookOpen, Calendar, Image as ImageIcon, Loader2, CheckCircle2 } from "lucide-react";
+import type { Course, Enrollment } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +20,15 @@ export default function CoursesPage() {
   });
   const { user } = useAuth();
   const { toast } = useToast();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+
+  const { data: enrollments } = useQuery<Enrollment[]>({
+    queryKey: ["/api/my-enrollments"],
+    enabled: !!user,
+  });
+
+  const enrolledCourseIds = new Set(enrollments?.map((e) => e.courseId) || []);
 
   const enrollMutation = useMutation({
     mutationFn: async (courseId: number) => {
@@ -25,12 +36,17 @@ export default function CoursesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/my-enrollments"] });
-      toast({ title: "Enrolled successfully!" });
+      setShowConfirm(true);
     },
     onError: (error: Error) => {
       toast({ title: error.message, variant: "destructive" });
     },
   });
+
+  const handleEnroll = (course: Course) => {
+    setSelectedCourse(course);
+    enrollMutation.mutate(course.id);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8" data-testid="page-courses">
@@ -115,12 +131,26 @@ export default function CoursesPage() {
                     <BookOpen className="h-3.5 w-3.5 mr-1" />
                     More
                   </Button>
-                  {course.access === "paid" && !user?.isPremium ? (
+                  {!user ? (
+                    <Link href="/auth">
+                      <Button size="sm" variant="outline" data-testid={`button-login-enroll-${course.id}`}>Login to Enroll</Button>
+                    </Link>
+                  ) : enrolledCourseIds.has(course.id) ? (
+                    <Button size="sm" variant="outline" disabled data-testid={`button-enrolled-${course.id}`}>
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1 text-green-600" />
+                      Enrolled
+                    </Button>
+                  ) : course.access === "paid" && !user?.isPremium ? (
                     <Button size="sm" variant="outline" disabled data-testid={`button-course-premium-${course.id}`}>
                       Premium Only
                     </Button>
                   ) : (
-                    <Button size="sm" onClick={() => enrollMutation.mutate(course.id)} disabled={enrollMutation.isPending} data-testid={`button-course-enroll-${course.id}`}>
+                    <Button
+                      size="sm"
+                      onClick={() => handleEnroll(course)}
+                      disabled={enrollMutation.isPending}
+                      data-testid={`button-course-enroll-${course.id}`}
+                    >
                       {enrollMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Enroll"}
                     </Button>
                   )}
@@ -135,6 +165,23 @@ export default function CoursesPage() {
           <p className="text-muted-foreground">No courses available yet.</p>
         </div>
       )}
+
+      <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Enrollment Successful
+            </DialogTitle>
+            <DialogDescription className="pt-3 text-base">
+              You have successfully enrolled in <strong>{selectedCourse?.title}</strong>. You will soon be contacted by our representative.
+            </DialogDescription>
+          </DialogHeader>
+          <Button onClick={() => setShowConfirm(false)} data-testid="button-close-enroll-dialog">
+            Got it
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
