@@ -302,6 +302,7 @@ function useDeleteMutation(endpoint: string, queryKey: string) {
 function RegFormTab() {
   const { toast } = useToast();
   const { data: allUsers } = useQuery<User[]>({ queryKey: ["/api/admin/users"] });
+  const { data: timerRules } = useQuery<Array<{ hscYear: string; sscYear: string; status: string }>>({ queryKey: ["/api/admin/timer-rules"] });
   const [hscYear, setHscYear] = useState("");
   const [sscYear, setSscYear] = useState("");
   const [action, setAction] = useState("");
@@ -325,6 +326,7 @@ function RegFormTab() {
     onSuccess: async (res) => {
       const data = await res.json();
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/timer-rules"] });
       toast({ title: data.message || `Updated ${data.count} user(s)` });
       setAction("");
     },
@@ -339,10 +341,10 @@ function RegFormTab() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <ClipboardList className="h-5 w-5" />
-            Bulk Assign by Year
+            Timer Rules (1st / 2nd Timer)
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Select HSC and/or SSC year to assign 1st Timer, 2nd Timer, or Restricted status to all matching users at once.
+            Set timer status by year. This updates all existing users AND automatically applies to new registrations matching the selected year(s).
           </p>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -380,7 +382,7 @@ function RegFormTab() {
           {(effectiveHsc || effectiveSsc) && (
             <div className="p-3 rounded-md bg-muted/50">
               <p className="text-sm font-medium mb-1">
-                {matchingUsers.length} user(s) match
+                {matchingUsers.length} existing user(s) match
                 {effectiveHsc ? ` HSC ${effectiveHsc}` : ""}
                 {effectiveHsc && effectiveSsc ? " &" : ""}
                 {effectiveSsc ? ` SSC ${effectiveSsc}` : ""}
@@ -407,8 +409,8 @@ function RegFormTab() {
                 <SelectValue placeholder="Select action" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1st_timer">1st Timer</SelectItem>
-                <SelectItem value="2nd_timer">2nd Timer</SelectItem>
+                <SelectItem value="1st_timer">1st Timer (No Penalty)</SelectItem>
+                <SelectItem value="2nd_timer">2nd Timer (-3 Penalty)</SelectItem>
                 <SelectItem value="restricted">Restricted</SelectItem>
               </SelectContent>
             </Select>
@@ -422,11 +424,40 @@ function RegFormTab() {
             {bulkAssign.isPending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Applying...</>
             ) : (
-              <>Apply to {matchingUsers.length} User(s)</>
+              <>Apply to {matchingUsers.length} Existing + All Future Users</>
             )}
           </Button>
         </CardContent>
       </Card>
+
+      {timerRules && timerRules.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              Saved Timer Rules
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              These rules automatically apply to new users when they register.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {timerRules.map((rule, i) => (
+                <div key={i} className="flex items-center gap-2 p-2 rounded-md bg-muted/50 flex-wrap">
+                  {rule.hscYear && <Badge variant="outline" className="text-xs">HSC {rule.hscYear}</Badge>}
+                  {rule.sscYear && <Badge variant="outline" className="text-xs">SSC {rule.sscYear}</Badge>}
+                  <Badge
+                    variant={rule.status === "2nd_timer" ? "destructive" : "default"}
+                    className="text-xs"
+                  >
+                    {rule.status === "2nd_timer" ? "2nd Timer (-3)" : "1st Timer"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

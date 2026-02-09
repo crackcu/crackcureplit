@@ -81,6 +81,27 @@ export async function registerRoutes(
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      let isSecondTimer = false;
+      let isRestricted = false;
+      try {
+        const timerSetting = await storage.getSetting("timer_rules");
+        const rules: Array<{ hscYear: string; sscYear: string; status: string }> = (timerSetting?.value as any) || [];
+        let bestMatch: { specificity: number; status: string } | null = null;
+        for (const rule of rules) {
+          if (!rule.hscYear && !rule.sscYear) continue;
+          const hscMatch = rule.hscYear ? rule.hscYear === hscYear : true;
+          const sscMatch = rule.sscYear ? rule.sscYear === sscYear : true;
+          if (!hscMatch || !sscMatch) continue;
+          const specificity = (rule.hscYear ? 1 : 0) + (rule.sscYear ? 1 : 0);
+          if (!bestMatch || specificity > bestMatch.specificity) {
+            bestMatch = { specificity, status: rule.status };
+          }
+        }
+        if (bestMatch) {
+          isSecondTimer = bestMatch.status === "2nd_timer";
+        }
+      } catch (_e) {}
+
       const user = await storage.createUser({
         username,
         password: hashedPassword,
@@ -99,7 +120,8 @@ export async function registerRoutes(
         sscBoard,
         role: "student",
         isPremium: false,
-        isRestricted: false,
+        isRestricted: isRestricted,
+        isSecondTimer: isSecondTimer,
       });
 
       req.session.userId = user.id;
@@ -558,6 +580,15 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/admin/timer-rules", requireAdmin, async (_req, res) => {
+    try {
+      const setting = await storage.getSetting("timer_rules");
+      res.json(setting?.value || []);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/admin/bulk-assign", requireAdmin, async (req, res) => {
     try {
       const { hscYear, sscYear, action } = req.body;
@@ -580,7 +611,20 @@ export async function registerRoutes(
       }
 
       const count = await storage.bulkUpdateUsersByYear(hscYear || "", sscYear || "", updateData);
-      res.json({ message: `Successfully updated ${count} user(s)`, count });
+
+      if (action === "1st_timer" || action === "2nd_timer") {
+        const existingSetting = await storage.getSetting("timer_rules");
+        const rules: Array<{ hscYear: string; sscYear: string; status: string }> = (existingSetting?.value as any) || [];
+        const filteredRules = rules.filter((r: any) => {
+          if (hscYear && sscYear) return !(r.hscYear === hscYear && r.sscYear === sscYear);
+          if (hscYear) return !(r.hscYear === hscYear && !r.sscYear);
+          return !(r.sscYear === sscYear && !r.hscYear);
+        });
+        filteredRules.push({ hscYear: hscYear || "", sscYear: sscYear || "", status: action });
+        await storage.setSetting("timer_rules", filteredRules);
+      }
+
+      res.json({ message: `Successfully updated ${count} user(s). Rule saved for future registrations.`, count });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
