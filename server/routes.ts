@@ -131,7 +131,23 @@ export async function registerRoutes(
           from: `"Crack-CU" <${process.env.SMTP_USER}>`,
           to: email,
           subject: "Welcome to Crack-CU!",
-          html: `<h2>Welcome to Crack-CU, ${fullName}!</h2><p>Your account has been created successfully.</p><p><strong>Username:</strong> ${username}</p><p>Use this username to sign in to your account.</p><p>Don't Just Study, Crack It!</p>`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+              <p style="font-size: 16px;">Hi! <strong>${fullName}</strong>,</p>
+              <p>Your registration on <strong>Crack-CU</strong> is complete.</p>
+              <p>Here are your account details:</p>
+              <p><strong>Username:</strong> <strong>${username}</strong></p>
+              <p><strong>You're:</strong> <strong>${isSecondTimer ? "2nd Timer" : "1st Timer"}</strong></p>
+              <p>Please save this information for future access.</p>
+              <br/>
+              <p>If you face any issues, contact us via WhatsApp.</p>
+              <p>WhatsApp: <a href="https://wa.me/8801522132809" style="color: #eb202a;">+8801522132809</a></p>
+              <br/>
+              <p>We're ready when you are.</p>
+              <br/>
+              <p>Regards,<br/><strong>Crack-CU Team</strong><br/>Don't Just Study, Crack It!</p>
+            </div>
+          `,
         });
       } catch (emailErr) {
         console.error("Failed to send welcome email:", emailErr);

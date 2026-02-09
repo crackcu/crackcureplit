@@ -89,12 +89,18 @@ export default function ClassesPage() {
                 </CardContent>
                 <CardFooter>
                   {cls.access === "paid" && !user?.isPremium ? (
-                    <Button size="sm" variant="outline" disabled>Premium Only</Button>
+                    <Button size="sm" variant="outline" disabled data-testid={`button-premium-${cls.id}`}>Premium Only</Button>
+                  ) : !user ? (
+                    <Link href="/auth"><Button size="sm" variant="outline" data-testid={`button-login-watch-${cls.id}`}>Login to Watch</Button></Link>
+                  ) : cls.videoUrl ? (
+                    <a href={cls.videoUrl} target="_blank" rel="noopener noreferrer">
+                      <Button size="sm" data-testid={`button-watch-${cls.id}`}>
+                        <Play className="h-3.5 w-3.5 mr-1" />
+                        Watch
+                      </Button>
+                    </a>
                   ) : (
-                    <Button size="sm" onClick={() => window.open(cls.videoUrl, "_blank")} data-testid={`button-watch-${cls.id}`}>
-                      <Play className="h-3.5 w-3.5 mr-1" />
-                      Watch
-                    </Button>
+                    <Button size="sm" variant="outline" disabled>No Video</Button>
                   )}
                 </CardFooter>
               </Card>
