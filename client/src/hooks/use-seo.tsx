@@ -9,7 +9,13 @@ interface SEOProps {
 }
 
 const SITE_NAME = "Crack-CU";
-const BASE_URL = typeof window !== "undefined" ? window.location.origin : "";
+
+function getBaseUrl() {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return "";
+}
 
 function setMeta(name: string, content: string, property = false) {
   const attr = property ? "property" : "name";
@@ -37,16 +43,19 @@ export function useSEO({ title, description, path, ogType = "website", noIndex =
     const fullTitle = title === SITE_NAME ? title : `${title} | ${SITE_NAME}`;
     document.title = fullTitle;
 
+    const baseUrl = getBaseUrl();
+
     setMeta("description", description);
     setMeta("og:title", fullTitle, true);
     setMeta("og:description", description, true);
     setMeta("og:type", ogType, true);
+    setMeta("og:site_name", SITE_NAME, true);
     setMeta("twitter:card", "summary_large_image");
     setMeta("twitter:title", fullTitle);
     setMeta("twitter:description", description);
 
     if (path) {
-      const canonicalUrl = `${BASE_URL}${path}`;
+      const canonicalUrl = `${baseUrl}${path}`;
       setCanonical(canonicalUrl);
       setMeta("og:url", canonicalUrl, true);
     }
@@ -54,8 +63,7 @@ export function useSEO({ title, description, path, ogType = "website", noIndex =
     if (noIndex) {
       setMeta("robots", "noindex, nofollow");
     } else {
-      const robotsMeta = document.querySelector('meta[name="robots"]');
-      if (robotsMeta) robotsMeta.remove();
+      setMeta("robots", "index, follow");
     }
 
     return () => {

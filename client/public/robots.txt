@@ -1,8 +1,8 @@
 User-agent: *
 Allow: /
+Allow: /mock-tests
 Disallow: /admin
 Disallow: /dashboard
-Disallow: /mock-tests/
 Disallow: /mock-review/
 
 Sitemap: /sitemap.xml
