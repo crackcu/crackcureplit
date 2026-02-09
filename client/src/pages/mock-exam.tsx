@@ -12,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Clock, Send, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import type { MockTest, MockSubmission } from "@shared/schema";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/use-seo";
 
 interface Question {
   id: number;
@@ -45,6 +46,8 @@ function renderHtml(text: string) {
 }
 
 export default function MockExamPage() {
+  useSEO({ title: "Mock Exam", description: "Take your Chittagong University admission mock test. Timed exam with auto-grading.", noIndex: true });
+
   const [, params] = useRoute("/mock-tests/:id");
   const id = params?.id;
   const { user } = useAuth();

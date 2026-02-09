@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
+import { useSEO } from "@/hooks/use-seo";
 
 const SOCIAL_LINKS = [
   { icon: SiFacebook, href: "https://www.facebook.com/crackcu", label: "Facebook Page" },
@@ -23,6 +24,8 @@ const SOCIAL_LINKS = [
 ];
 
 export default function ContactPage() {
+  useSEO({ title: "Contact Us", description: "Get in touch with the Crack-CU team. Find our social media links, phone number, email, and send us a message.", path: "/contact" });
+
   const { data: teamMembers, isLoading } = useQuery<TeamMember[]>({
     queryKey: ["/api/team-members"],
   });

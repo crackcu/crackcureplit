@@ -11,11 +11,13 @@ import { motion } from "framer-motion";
 import { Loader2, Eye, EyeOff, Copy, CheckCircle2 } from "lucide-react";
 import { BANGLADESH_BOARDS, HSC_GROUPS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useSEO } from "@/hooks/use-seo";
 
 const SSC_GROUPS = ["Science", "Business Studies", "Humanities"] as const;
 
 export default function AuthPage() {
   const { user } = useAuth();
+  useSEO({ title: "Login / Register", description: "Sign in or create your Crack-CU account to access courses, mock tests, and study resources for CU admission preparation.", path: "/auth" });
   const [, setLocation] = useLocation();
 
   if (user) {

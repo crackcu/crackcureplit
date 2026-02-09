@@ -9,6 +9,7 @@ import { Clock, Play, Calendar, FileText } from "lucide-react";
 import type { MockTest } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/use-seo";
 
 const FILTER_TAGS = ["All", "CU Mock", "English", "Analytical Skill", "Problem Solving"];
 
@@ -50,6 +51,8 @@ function getTimeRemaining(targetDate: Date) {
 }
 
 export default function MockTestsPage() {
+  useSEO({ title: "Mock Tests", description: "Practice with realistic Chittagong University admission mock tests. Timed exams with detailed grading for English, Analytical Skills, and Problem Solving.", path: "/mock-tests" });
+
   const { data: mockTests, isLoading } = useQuery<MockTest[]>({
     queryKey: ["/api/mock-tests"],
   });

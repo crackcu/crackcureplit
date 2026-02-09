@@ -9,10 +9,13 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { Calendar, Bell, ExternalLink } from "lucide-react";
 import type { Notice } from "@shared/schema";
+import { useSEO } from "@/hooks/use-seo";
 
 const FILTER_TAGS = ["All", "Admission", "CU Notice", "Crack-CU Notice"];
 
 export default function NoticesPage() {
+  useSEO({ title: "Notices", description: "Latest notices and announcements for Chittagong University admission updates and Crack-CU platform news.", path: "/notices" });
+
   const { data: noticeItems, isLoading } = useQuery<Notice[]>({
     queryKey: ["/api/notices"],
   });

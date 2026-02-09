@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { AlertTriangle, CheckCircle2, XCircle, ArrowLeft } from "lucide-react";
 import type { MockSubmission } from "@shared/schema";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/use-seo";
 
 interface Question {
   id: number;
@@ -51,6 +52,8 @@ function renderHtml(text: string) {
 }
 
 export default function MockReviewPage() {
+  useSEO({ title: "Mock Test Review", description: "Review your mock test answers and see correct solutions.", noIndex: true });
+
   const [, params] = useRoute("/mock-review/:submissionId");
   const submissionId = params?.submissionId;
   const { user } = useAuth();

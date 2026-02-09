@@ -13,8 +13,10 @@ import type { Course, Enrollment } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useSEO } from "@/hooks/use-seo";
 
 export default function CoursesPage() {
+  useSEO({ title: "Courses", description: "Browse admission preparation courses for Chittagong University. English, Analytical Skills, and Problem Solving courses by expert mentors.", path: "/courses" });
   const { data: courses, isLoading } = useQuery<Course[]>({
     queryKey: ["/api/courses"],
   });

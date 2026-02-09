@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { Course, MockTest, Class, Resource, Notice, HeroBanner } from "@shared/schema";
 import { useState, useEffect, useCallback } from "react";
+import { useSEO } from "@/hooks/use-seo";
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -568,6 +569,8 @@ function NoticesSection() {
 }
 
 export default function Home() {
+  useSEO({ title: "Crack-CU", description: "Prepare for Chittagong University admission with expert-led courses, mock tests, video classes, and study resources. Join thousands of CU aspirants.", path: "/" });
+
   return (
     <div className="min-h-screen" data-testid="page-home">
       <HeroSection />

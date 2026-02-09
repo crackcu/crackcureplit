@@ -17,10 +17,13 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { MockSubmission, Course, Enrollment } from "@shared/schema";
 import { BANGLADESH_BOARDS, HSC_GROUPS } from "@shared/schema";
+import { useSEO } from "@/hooks/use-seo";
 
 type SubmissionWithTitle = MockSubmission & { mockTestTitle?: string };
 
 export default function Dashboard() {
+  useSEO({ title: "Dashboard", description: "Your Crack-CU student dashboard. Track your progress, view enrolled courses, and check mock test submissions.", path: "/dashboard", noIndex: true });
+
   const { user, logoutMutation } = useAuth();
 
   if (!user) return null;

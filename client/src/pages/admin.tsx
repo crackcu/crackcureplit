@@ -45,8 +45,11 @@ import type { User, Course, MockTest, Class, Resource, Notice, TeamMember, HeroB
 import { MOCK_TAGS, CLASS_TAGS, RESOURCE_TAGS, ACCESS_LEVELS, USER_ROLES, NOTICE_TAGS } from "@shared/schema";
 import { Redirect } from "wouter";
 import { ImageUploader } from "@/components/image-uploader";
+import { useSEO } from "@/hooks/use-seo";
 
 export default function AdminDashboard() {
+  useSEO({ title: "Admin Panel", description: "Crack-CU administration dashboard.", path: "/admin", noIndex: true });
+
   const { user } = useAuth();
 
   if (!user || (user.role !== "admin" && user.role !== "moderator")) {

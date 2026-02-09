@@ -9,10 +9,13 @@ import { format } from "date-fns";
 import { Calendar, Download, FileText } from "lucide-react";
 import type { Resource } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { useSEO } from "@/hooks/use-seo";
 
 const FILTER_TAGS = ["All", "CU QB", "English", "Analytical Skill", "Problem Solving"];
 
 export default function ResourcesPage() {
+  useSEO({ title: "Study Resources", description: "Download study materials, question banks, and preparation resources for Chittagong University admission test.", path: "/resources" });
+
   const { data: resourceItems, isLoading } = useQuery<Resource[]>({
     queryKey: ["/api/resources"],
   });

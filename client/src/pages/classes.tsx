@@ -10,10 +10,13 @@ import { Calendar, Video, Play } from "lucide-react";
 import type { Class } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/use-seo";
 
 const FILTER_TAGS = ["All", "English", "Analytical Skill", "Problem Solving"];
 
 export default function ClassesPage() {
+  useSEO({ title: "Video Classes", description: "Watch expert video classes for CU admission preparation. Covering English, Analytical Skills, and Problem Solving subjects.", path: "/classes" });
+
   const { data: classItems, isLoading } = useQuery<Class[]>({
     queryKey: ["/api/classes"],
   });
