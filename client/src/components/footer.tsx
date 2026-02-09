@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Logo } from "@/components/logo";
 import { SiWhatsapp, SiFacebook, SiYoutube, SiTelegram } from "react-icons/si";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, Users } from "lucide-react";
 
 const QUICK_LINKS = [
   { label: "Courses", href: "/courses" },
@@ -12,10 +12,11 @@ const QUICK_LINKS = [
 ];
 
 const SOCIAL_LINKS = [
-  { icon: SiWhatsapp, href: "https://wa.me/8801522132809", label: "WhatsApp" },
-  { icon: SiFacebook, href: "#", label: "Facebook" },
-  { icon: SiYoutube, href: "#", label: "YouTube" },
-  { icon: SiTelegram, href: "#", label: "Telegram" },
+  { icon: SiFacebook, href: "https://www.facebook.com/crackcu", label: "Facebook" },
+  { icon: Users, href: "https://www.facebook.com/groups/crackcu", label: "Group" },
+  { icon: SiYoutube, href: "https://www.youtube.com/@crackcu", label: "YouTube" },
+  { icon: SiTelegram, href: "https://t.me/crackcu", label: "Telegram" },
+  { icon: SiWhatsapp, href: "https://api.whatsapp.com/send/?phone=8801522132809", label: "WhatsApp" },
 ];
 
 export function Footer() {
@@ -37,7 +38,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/60 hover:text-primary transition-colors"
+                    className="text-sm text-white/60 hover:text-[#eb202a] transition-colors"
                     data-testid={`footer-link-${link.label.toLowerCase().replace(/\s/g, "-")}`}
                   >
                     {link.label}
@@ -49,14 +50,14 @@ export function Footer() {
 
           <div>
             <h4 className="font-semibold text-sm mb-3 text-white">Contact Us</h4>
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
               {SOCIAL_LINKS.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-8 w-8 rounded-md bg-white/10 flex items-center justify-center text-white/60 hover:text-primary transition-colors"
+                  className="h-8 w-8 rounded-md bg-white/10 flex items-center justify-center text-white/60 hover:text-[#eb202a] transition-colors"
                   data-testid={`social-${social.label.toLowerCase()}`}
                 >
                   <social.icon className="h-4 w-4" />
@@ -70,7 +71,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 shrink-0" />
-                <span>crack.info@gmail.com</span>
+                <span>Crackcu.info@gmail.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />

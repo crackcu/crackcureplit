@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { motion } from "framer-motion";
-import { Mail, Phone, MapPin, Send } from "lucide-react";
+import { Mail, Phone, MapPin, Send, Users } from "lucide-react";
 import { SiWhatsapp, SiFacebook, SiYoutube, SiTelegram } from "react-icons/si";
 import type { TeamMember } from "@shared/schema";
 import { useState } from "react";
@@ -13,6 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
+
+const SOCIAL_LINKS = [
+  { icon: SiFacebook, href: "https://www.facebook.com/crackcu", label: "Facebook Page" },
+  { icon: Users, href: "https://www.facebook.com/groups/crackcu", label: "Facebook Group" },
+  { icon: SiYoutube, href: "https://www.youtube.com/@crackcu", label: "YouTube" },
+  { icon: SiTelegram, href: "https://t.me/crackcu", label: "Telegram" },
+  { icon: SiWhatsapp, href: "https://api.whatsapp.com/send/?phone=8801522132809", label: "WhatsApp" },
+];
 
 export default function ContactPage() {
   const { data: teamMembers, isLoading } = useQuery<TeamMember[]>({
@@ -26,12 +34,7 @@ export default function ContactPage() {
         <p className="text-muted-foreground mb-8">Get in touch with the Crack-CU team</p>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-        <ContactForm />
-        <ContactInfo />
-      </div>
-
-      <div className="mb-4">
+      <div className="mb-12">
         <h2 className="text-xl font-bold tracking-tight mb-6">Our Team</h2>
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -61,6 +64,77 @@ export default function ContactPage() {
           <p className="text-muted-foreground text-sm">Team profiles coming soon.</p>
         )}
       </div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-12">
+        <h2 className="text-xl font-bold tracking-tight mb-6">Follow Us</h2>
+        <div className="flex flex-wrap gap-4">
+          {SOCIAL_LINKS.map((s) => (
+            <a
+              key={s.label}
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-2 px-4 py-2.5 rounded-md bg-muted text-muted-foreground hover:text-[#eb202a] transition-colors"
+              data-testid={`social-${s.label.toLowerCase().replace(/\s/g, "-")}`}
+            >
+              <s.icon className="h-5 w-5 transition-colors group-hover:text-[#eb202a]" />
+              <span className="text-sm font-medium">{s.label}</span>
+            </a>
+          ))}
+        </div>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-12">
+        <h2 className="text-xl font-bold tracking-tight mb-6">Get In Touch</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                  <Phone className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Phone</p>
+                  <a href="tel:+8801522132809" className="text-sm text-muted-foreground hover:text-foreground transition-colors">+880 1522-132809</a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                  <Mail className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Email</p>
+                  <a href="mailto:Crackcu.info@gmail.com" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Crackcu.info@gmail.com</a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Location</p>
+                  <p className="text-sm text-muted-foreground">Chittagong, Bangladesh</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <h2 className="text-xl font-bold tracking-tight mb-6">Send Us a Message</h2>
+        <div className="max-w-xl">
+          <ContactForm />
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -115,63 +189,5 @@ function ContactForm() {
         </form>
       </CardContent>
     </Card>
-  );
-}
-
-function ContactInfo() {
-  const SOCIALS = [
-    { icon: SiWhatsapp, href: "https://wa.me/8801522132809", label: "WhatsApp" },
-    { icon: SiFacebook, href: "#", label: "Facebook" },
-    { icon: SiYoutube, href: "#", label: "YouTube" },
-    { icon: SiTelegram, href: "#", label: "Telegram" },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center shrink-0">
-              <Phone className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">Phone</p>
-              <p className="text-sm text-muted-foreground">+880 1522-132809</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center shrink-0">
-              <Mail className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">Email</p>
-              <p className="text-sm text-muted-foreground">crack.info@gmail.com</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center shrink-0">
-              <MapPin className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">Location</p>
-              <p className="text-sm text-muted-foreground">Chittagong, Bangladesh</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm font-medium mb-3">Follow Us</p>
-          <div className="flex gap-3">
-            {SOCIALS.map((s) => (
-              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" data-testid={`social-${s.label.toLowerCase()}`}>
-                <s.icon className="h-4 w-4" />
-              </a>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
   );
 }
