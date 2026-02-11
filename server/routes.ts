@@ -749,7 +749,8 @@ export async function registerRoutes(
     try {
       const data = { ...req.body, createdBy: req.session.userId };
       if (data.price !== undefined) data.price = Number(data.price);
-      if (data.offerPrice !== undefined) data.offerPrice = Number(data.offerPrice);
+      if (data.offerPrice !== undefined) data.offerPrice = data.offerPrice ? Number(data.offerPrice) : null;
+      if (data.lastDate !== undefined) data.lastDate = data.lastDate ? new Date(data.lastDate) : null;
       if (data.isVisible === undefined) data.isVisible = true;
       const course = await storage.createCourse(data);
       res.json(course);
@@ -976,7 +977,7 @@ export async function registerRoutes(
     try {
       const data = { ...req.body, createdBy: req.session.userId };
       if (data.isVisible === undefined) data.isVisible = true;
-      if (data.date) data.date = new Date(data.date);
+      if (data.date !== undefined) data.date = data.date ? new Date(data.date) : null;
       const notice = await storage.createNotice(data);
       res.json(notice);
     } catch (error: any) {
