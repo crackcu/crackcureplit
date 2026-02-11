@@ -21,8 +21,9 @@ Crack-CU is a mobile-responsive ed-tech platform for Chittagong University admis
 - Feb 2026: Courses & classes thumbnail ratio changed to 16:9 (aspect-video)
 - Feb 2026: Persistent timer rules - admin sets 1st/2nd timer by year, auto-applies to existing and future users via siteSettings
 - Feb 2026: SEO optimization - dynamic page titles/meta via useSEO hook, OG/Twitter cards, JSON-LD structured data, robots.txt, sitemap.xml, image lazy loading
-- Database schema: 11 tables via Drizzle ORM + PostgreSQL
-- Object storage integrated for file uploads (GCS)
+- Feb 2026: Full migration to Supabase - database (SUPABASE_DATABASE_URL) and file storage (Supabase Storage bucket)
+- Database schema: 11 tables via Drizzle ORM + PostgreSQL (Supabase)
+- File storage: Supabase Storage (configurable bucket via SUPABASE_BUCKET env var)
 - Session-based auth with bcrypt password hashing
 
 ## Architecture
@@ -31,7 +32,8 @@ Crack-CU is a mobile-responsive ed-tech platform for Chittagong University admis
 - **Auth**: Custom auth, username auto-generated: [HSC Group Letter][HSC Year Last 2 Digits][HSC Roll]
 - **Roles**: student, mentor, moderator, admin
 - **Email**: Nodemailer with Gmail SMTP (crackcu.info@gmail.com)
-- **Object Storage**: GCS via Replit integration, presigned URL uploads
+- **Database**: Supabase PostgreSQL (via SUPABASE_DATABASE_URL, falls back to DATABASE_URL)
+- **File Storage**: Supabase Storage (bucket configurable via SUPABASE_BUCKET, defaults to "Uploads")
 
 ## Key Files
 - `shared/schema.ts` - All data models, insert schemas, types
