@@ -1040,6 +1040,9 @@ export async function registerRoutes(
   app.delete("/api/admin/banners/:id", requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid banner ID" });
+      }
       await storage.deleteHeroBanner(id);
       res.json({ message: "Deleted" });
     } catch (error: any) {
