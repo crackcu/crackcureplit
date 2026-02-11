@@ -4,11 +4,13 @@ import { Express } from "express";
 
 const PgStore = connectPgSimple(session);
 
+const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+
 export function setupAuth(app: Express) {
   app.use(
     session({
       store: new PgStore({
-        conString: process.env.DATABASE_URL,
+        conString: databaseUrl,
         createTableIfMissing: true,
       }),
       secret: process.env.SESSION_SECRET!,
