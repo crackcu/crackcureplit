@@ -13,7 +13,7 @@ interface ImageUploaderProps {
 }
 
 export function ImageUploader({ value, onChange, label = "Image", placeholder = "https://..." }: ImageUploaderProps) {
-  const [mode, setMode] = useState<"url" | "upload">(value && !value.startsWith("/objects/") ? "url" : "url");
+  const [mode, setMode] = useState<"url" | "upload">("url");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -30,20 +30,15 @@ export function ImageUploader({ value, onChange, label = "Image", placeholder = 
 
     setUploading(true);
     try {
+      const formData = new FormData();
+      formData.append("file", file);
+
       const res = await fetch("/api/uploads/request-url", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+        body: formData,
       });
-      if (!res.ok) throw new Error("Failed to get upload URL");
-      const { uploadURL, objectPath } = await res.json();
-
-      const putRes = await fetch(uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!putRes.ok) throw new Error("Upload failed");
+      if (!res.ok) throw new Error("Upload failed");
+      const { objectPath } = await res.json();
 
       onChange(objectPath);
       toast({ title: "Image uploaded" });

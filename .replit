@@ -46,3 +46,6 @@ integrations = ["javascript_auth_all_persistance:1.0.0", "javascript_database:1.
 [userenv.shared]
 SMTP_USER = "crackcu.info@gmail.com"
 SMTP_PASS = "nuon lxjf ntvm ylin"
+SUPABASE_URL = "https://jwdidgjutflkatfsepmk.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp3ZGlkZ2p1dGZsa2F0ZnNlcG1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2NDY5NzIsImV4cCI6MjA4NjIyMjk3Mn0.Tr0sOZGVl2J3ZYDY3L-1KQh932FcBmjBdmH24LLK2B8"
+SUPABASE_BUCKET = "Uploads"
