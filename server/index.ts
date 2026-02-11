@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { pool } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -60,6 +61,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    const tables = ['users', 'hero_banners', 'courses', 'mock_tests', 'mock_submissions', 'classes', 'resources', 'notices', 'team_members', 'enrollments', 'site_settings', 'session'];
+    for (const table of tables) {
+      await pool.query(`ALTER TABLE IF EXISTS ${table} REPLICA IDENTITY FULL`);
+    }
+    log("Replica identity set for all tables");
+  } catch (err: any) {
+    log(`Warning: Could not set replica identity: ${err.message}`);
+  }
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
